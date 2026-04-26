@@ -1,0 +1,52 @@
+name: medam
+description: Korean health and diet tracking app.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  flutter_riverpod: any
+  riverpod_annotation: any
+  go_router: any
+
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
+  firebase_messaging: any
+  firebase_remote_config: any
+  firebase_analytics: any
+  firebase_crashlytics: any
+
+  camera: any
+  image_picker: any
+  image_gallery_saver: any
+  share_plus: any
+  table_calendar: any
+  shared_preferences: any
+  flutter_secure_storage: any
+  dio: any
+  google_sign_in: any
+  sign_in_with_apple: any
+  flutter_local_notifications: any
+  google_mobile_ads: any
+  intl: any
+  cached_network_image: any
+  permission_handler: any
+  lottie: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  build_runner: any
+  riverpod_generator: any
+
+flutter:
+  uses-material-design: true

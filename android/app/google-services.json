@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "144719086854",
+    "project_id": "medam-c9446",
+    "storage_bucket": "medam-c9446.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144719086854:android:c48ff2b928873006acca87",
+        "android_client_info": {
+          "package_name": "com.medam.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDV5YIF7lPabubEe-btk2j7UPQ7Fod68Fs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
