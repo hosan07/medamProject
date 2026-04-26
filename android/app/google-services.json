@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:144719086854:android:c48ff2b928873006acca87",
+        "mobilesdk_app_id": "1:144719086854:android:a47ed8af0cfe5b0bacca87",
         "android_client_info": {
-          "package_name": "com.medam.app"
+          "package_name": "com.medam.fit.app"
         }
       },
       "oauth_client": [],

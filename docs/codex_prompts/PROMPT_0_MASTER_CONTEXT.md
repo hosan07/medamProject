@@ -5,7 +5,7 @@ You are a senior Flutter engineer building a Korean health & diet tracking app c
 ## Project Overview
 
 - App name: 미담 (Medam)
-- Package ID: `com.medam.app`
+- Package ID: `com.medam.fit.app`
 - Language: Korean only. No i18n needed.
 - Platforms: iOS and Android first.
 - Font: Pretendard.

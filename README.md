@@ -6,7 +6,7 @@
 
 - Flutter 3.38.6
 - Dart 3.10.7
-- Package ID: `com.medam.app`
+- Package ID: `com.medam.fit.app`
 - State management: Riverpod
 - Routing: go_router
 - Backend: Firebase

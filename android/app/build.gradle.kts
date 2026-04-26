@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.medam.app"
+    namespace = "com.medam.fit.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         // 미담의 실제 배포 패키지 ID입니다. Firebase 앱 등록도 이 값으로 맞춥니다.
-        applicationId = "com.medam.app"
+        applicationId = "com.medam.fit.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

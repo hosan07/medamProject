@@ -35,7 +35,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDV5YIF7lPabubEe-btk2j7UPQ7Fod68Fs',
-    appId: '1:144719086854:android:c48ff2b928873006acca87',
+    appId: '1:144719086854:android:a47ed8af0cfe5b0bacca87',
     messagingSenderId: '144719086854',
     projectId: 'medam-c9446',
     storageBucket: 'medam-c9446.firebasestorage.app',
@@ -43,10 +43,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAVzQ59vBMUrzHoP0SyoR47x-ZNLAb1-Xo',
-    appId: '1:144719086854:ios:35fb6fc8c5df14eeacca87',
+    appId: '1:144719086854:ios:345ad457a994f59dacca87',
     messagingSenderId: '144719086854',
     projectId: 'medam-c9446',
     storageBucket: 'medam-c9446.firebasestorage.app',
-    iosBundleId: 'com.medam.app',
+    iosBundleId: 'com.medam.fit.app',
   );
 }

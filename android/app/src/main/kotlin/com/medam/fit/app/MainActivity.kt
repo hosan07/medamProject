@@ -1,4 +1,4 @@
-package com.medam.app
+package com.medam.fit.app
 
 import io.flutter.embedding.android.FlutterActivity
 
