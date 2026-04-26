@@ -12,6 +12,11 @@
         android:label="미담"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- 개발 단계에서는 Google 공식 테스트 AdMob App ID를 사용합니다. 실제 광고 계정 생성 후 교체합니다. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
