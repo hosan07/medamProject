@@ -9,6 +9,9 @@ import '../data/repositories/auth_repository.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
+import '../features/camera/screens/body_camera_screen.dart';
+import '../features/camera/screens/camera_menu_screen.dart';
+import '../features/camera/screens/food_camera_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
 import '../features/onboarding/screens/step10_water.dart';
@@ -135,10 +138,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: MedamRouteName.camera,
                 path: '/camera',
-                builder: (context, state) => const PlaceholderFeatureScreen(
-                  title: '카메라',
-                  icon: Icons.camera_alt_rounded,
-                ),
+                builder: (context, state) => const CameraMenuScreen(),
               ),
             ],
           ),
@@ -197,7 +197,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/body-album',
-        builder: (context, state) => const MedamRouteScreen(title: '눈바디 앨범'),
+        builder: (context, state) => const BodyCameraScreen(autoCapture: false),
+      ),
+      GoRoute(
+        path: '/camera/body',
+        builder: (context, state) => const BodyCameraScreen(),
+      ),
+      GoRoute(
+        path: '/camera/food',
+        builder: (context, state) => const FoodCameraScreen(),
       ),
       GoRoute(
         path: '/exercise',

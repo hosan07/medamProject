@@ -23,6 +23,7 @@ dependencies:
   firebase_remote_config: any
   firebase_analytics: any
   firebase_crashlytics: any
+  firebase_storage: any
 
   camera: any
   image_picker: any
