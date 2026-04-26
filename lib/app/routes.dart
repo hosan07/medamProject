@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/placeholder_feature_screen.dart';
 import '../data/repositories/auth_repository.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
+import '../features/home/screens/home_screen.dart';
+import '../features/home/widgets/main_scaffold.dart';
 import '../features/onboarding/screens/step10_water.dart';
 import '../features/onboarding/screens/step11_exercise.dart';
 import '../features/onboarding/screens/step12_ai_coach.dart';
@@ -101,30 +104,69 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           };
         },
       ),
-      GoRoute(
-        name: MedamRouteName.home,
-        path: '/home',
-        builder: (context, state) => const MedamRouteScreen(title: '홈'),
-      ),
-      GoRoute(
-        name: MedamRouteName.aiChat,
-        path: '/ai-chat',
-        builder: (context, state) => const MedamRouteScreen(title: 'AI봇'),
-      ),
-      GoRoute(
-        name: MedamRouteName.camera,
-        path: '/camera',
-        builder: (context, state) => const MedamRouteScreen(title: '카메라'),
-      ),
-      GoRoute(
-        name: MedamRouteName.community,
-        path: '/community',
-        builder: (context, state) => const MedamRouteScreen(title: '커뮤니티'),
-      ),
-      GoRoute(
-        name: MedamRouteName.mypage,
-        path: '/mypage',
-        builder: (context, state) => const MedamRouteScreen(title: '마이페이지'),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainScaffold(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: MedamRouteName.home,
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: MedamRouteName.aiChat,
+                path: '/ai-chat',
+                builder: (context, state) => const PlaceholderFeatureScreen(
+                  title: 'AI봇',
+                  icon: Icons.chat_bubble_rounded,
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: MedamRouteName.camera,
+                path: '/camera',
+                builder: (context, state) => const PlaceholderFeatureScreen(
+                  title: '카메라',
+                  icon: Icons.camera_alt_rounded,
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: MedamRouteName.community,
+                path: '/community',
+                builder: (context, state) => const PlaceholderFeatureScreen(
+                  title: '커뮤니티',
+                  icon: Icons.people_rounded,
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                name: MedamRouteName.mypage,
+                path: '/mypage',
+                builder: (context, state) => const PlaceholderFeatureScreen(
+                  title: '마이페이지',
+                  icon: Icons.person_rounded,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         name: MedamRouteName.settings,
@@ -148,6 +190,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final uid = state.pathParameters['uid'] ?? '';
           return MedamRouteScreen(title: '프로필', subtitle: uid);
         },
+      ),
+      GoRoute(
+        path: '/daily-detail',
+        builder: (context, state) => const MedamRouteScreen(title: '일일 상세'),
+      ),
+      GoRoute(
+        path: '/body-album',
+        builder: (context, state) => const MedamRouteScreen(title: '눈바디 앨범'),
+      ),
+      GoRoute(
+        path: '/exercise',
+        builder: (context, state) => const MedamRouteScreen(title: '운동 추가'),
+      ),
+      GoRoute(
+        path: '/exercise-detail',
+        builder: (context, state) => const MedamRouteScreen(title: '운동 상세'),
       ),
     ],
   );
