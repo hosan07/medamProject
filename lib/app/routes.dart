@@ -13,6 +13,11 @@ import '../features/camera/screens/body_camera_screen.dart';
 import '../features/camera/screens/camera_menu_screen.dart';
 import '../features/camera/screens/food_camera_screen.dart';
 import '../features/chat/screens/ai_chat_screen.dart';
+import '../features/community/screens/chat_list_screen.dart';
+import '../features/community/screens/chat_room_screen.dart';
+import '../features/community/screens/community_screen.dart';
+import '../features/community/screens/post_detail_screen.dart';
+import '../features/community/screens/post_write_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
 import '../features/onboarding/screens/step10_water.dart';
@@ -145,10 +150,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: MedamRouteName.community,
                 path: '/community',
-                builder: (context, state) => const PlaceholderFeatureScreen(
-                  title: '커뮤니티',
-                  icon: Icons.people_rounded,
-                ),
+                builder: (context, state) => const CommunityScreen(),
               ),
             ],
           ),
@@ -165,6 +167,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/community/write',
+        builder: (context, state) => const PostWriteScreen(),
+      ),
+      GoRoute(
+        path: '/community/posts/:postId',
+        builder: (context, state) {
+          final postId = state.pathParameters['postId'] ?? '';
+          return PostDetailScreen(postId: postId);
+        },
+      ),
+      GoRoute(
+        path: '/community/chats',
+        builder: (context, state) => const ChatListScreen(),
+      ),
+      GoRoute(
+        path: '/community/chats/:chatId',
+        builder: (context, state) {
+          final chatId = state.pathParameters['chatId'] ?? '';
+          return ChatRoomScreen(chatId: chatId);
+        },
       ),
       GoRoute(
         name: MedamRouteName.settings,
