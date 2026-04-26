@@ -8,6 +8,22 @@ import '../data/repositories/auth_repository.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
+import '../features/onboarding/screens/step10_water.dart';
+import '../features/onboarding/screens/step11_exercise.dart';
+import '../features/onboarding/screens/step12_ai_coach.dart';
+import '../features/onboarding/screens/step13_plan_loading.dart';
+import '../features/onboarding/screens/step14_plan_result.dart';
+import '../features/onboarding/screens/step15_diet_type.dart';
+import '../features/onboarding/screens/step16_complete.dart';
+import '../features/onboarding/screens/step1_nickname.dart';
+import '../features/onboarding/screens/step2_birthdate.dart';
+import '../features/onboarding/screens/step3_gender.dart';
+import '../features/onboarding/screens/step4_height.dart';
+import '../features/onboarding/screens/step5_goal.dart';
+import '../features/onboarding/screens/step6_goal_reason.dart';
+import '../features/onboarding/screens/step7_tried_before.dart';
+import '../features/onboarding/screens/step8_weight.dart';
+import '../features/onboarding/screens/step9_activity.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -63,8 +79,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: MedamRouteName.onboardingStep,
         path: '/onboarding/:step',
         builder: (context, state) {
-          final step = state.pathParameters['step'] ?? '1';
-          return MedamRouteScreen(title: '온보딩 $step단계');
+          final step = int.tryParse(state.pathParameters['step'] ?? '1') ?? 1;
+          return switch (step) {
+            1 => const Step1NicknameScreen(),
+            2 => const Step2BirthdateScreen(),
+            3 => const Step3GenderScreen(),
+            4 => const Step4HeightScreen(),
+            5 => const Step5GoalScreen(),
+            6 => const Step6GoalReasonScreen(),
+            7 => const Step7TriedBeforeScreen(),
+            8 => const Step8WeightScreen(),
+            9 => const Step9ActivityScreen(),
+            10 => const Step10WaterScreen(),
+            11 => const Step11ExerciseScreen(),
+            12 => const Step12AiCoachScreen(),
+            13 => const Step13PlanLoadingScreen(),
+            14 => const Step14PlanResultScreen(),
+            15 => const Step15DietTypeScreen(),
+            16 => const Step16CompleteScreen(),
+            _ => const Step1NicknameScreen(),
+          };
         },
       ),
       GoRoute(
