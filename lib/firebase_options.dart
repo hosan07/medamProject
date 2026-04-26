@@ -13,9 +13,7 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        '미담은 현재 iOS와 Android 우선으로 Firebase가 설정되어 있습니다.',
-      );
+      throw UnsupportedError('미담은 현재 iOS와 Android 우선으로 Firebase가 설정되어 있습니다.');
     }
 
     switch (defaultTargetPlatform) {
@@ -27,9 +25,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
       case TargetPlatform.linux:
       case TargetPlatform.fuchsia:
-        throw UnsupportedError(
-          '미담은 현재 iOS와 Android 우선으로 Firebase가 설정되어 있습니다.',
-        );
+        throw UnsupportedError('미담은 현재 iOS와 Android 우선으로 Firebase가 설정되어 있습니다.');
     }
   }
 

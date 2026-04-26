@@ -52,6 +52,9 @@ You are a senior Flutter engineer building a Korean health & diet tracking app c
 - Prefer small, feature-scoped files over broad shared abstractions.
 - Use Firebase-ready boundaries through repositories and models.
 - Keep app startup simple and production-friendly.
+- Design responsively for phones and tablets from the start.
+- Tablet layouts should feel intentionally expanded, such as constrained content columns, wider cards, split layouts, or multi-column sections where appropriate.
+- Do not scale font sizes based on viewport width. Keep typography stable and adapt layout, spacing, and container widths instead.
 
 ## Required Folder Structure
 

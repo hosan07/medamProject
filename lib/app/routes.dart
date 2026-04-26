@@ -1,21 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/repositories/auth_repository.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/splash_screen.dart';
+
 final goRouterProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/splash',
-    // 인증 가드는 PROMPT 2에서 AuthProvider가 준비되면 redirect에 연결합니다.
+    refreshListenable: GoRouterRefreshStream(
+      ref.watch(authRepositoryProvider).authStateChanges,
+    ),
+    redirect: (context, state) async {
+      final path = state.uri.path;
+      final isSplash = path == '/splash';
+      final isLogin = path == '/login';
+      final isOnboarding = path.startsWith('/onboarding');
+
+      if (isSplash || authState.isLoading) {
+        return null;
+      }
+
+      final user = authState.value;
+      if (user == null) {
+        return isLogin ? null : '/login';
+      }
+
+      final hasProfile = await ref.read(hasUserProfileProvider.future);
+      if (!hasProfile) {
+        return isOnboarding ? null : '/onboarding';
+      }
+
+      if (isLogin || isOnboarding) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         name: MedamRouteName.splash,
         path: '/splash',
-        builder: (context, state) => const MedamRouteScreen(title: '스플래시'),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         name: MedamRouteName.login,
         path: '/login',
-        builder: (context, state) => const MedamRouteScreen(title: '로그인'),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         name: MedamRouteName.onboarding,
@@ -133,5 +170,20 @@ class MedamRouteScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

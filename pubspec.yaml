@@ -40,6 +40,7 @@ dependencies:
   cached_network_image: any
   permission_handler: any
   lottie: any
+  url_launcher: any
 
 dev_dependencies:
   flutter_test:
