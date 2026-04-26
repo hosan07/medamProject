@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # 현재 프로젝트 전용으로 패치한 외부 플러그인 소스입니다.
+    # 앱 코드 분석 대상에서는 제외하고, 빌드 검증으로 호환성을 확인합니다.
+    - third_party/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

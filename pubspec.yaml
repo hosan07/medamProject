@@ -48,5 +48,9 @@ dev_dependencies:
   build_runner: any
   riverpod_generator: any
 
+dependency_overrides:
+  image_gallery_saver:
+    path: third_party/image_gallery_saver
+
 flutter:
   uses-material-design: true

@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+android/build/
+ios/Pods/
+third_party/image_gallery_saver/example/
+third_party/image_gallery_saver/test/
 
 # Symbolication related
 app.*.symbols
