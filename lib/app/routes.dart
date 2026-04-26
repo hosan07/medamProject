@@ -12,6 +12,7 @@ import '../features/auth/screens/splash_screen.dart';
 import '../features/camera/screens/body_camera_screen.dart';
 import '../features/camera/screens/camera_menu_screen.dart';
 import '../features/camera/screens/food_camera_screen.dart';
+import '../features/chat/screens/ai_chat_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
 import '../features/onboarding/screens/step10_water.dart';
@@ -126,10 +127,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: MedamRouteName.aiChat,
                 path: '/ai-chat',
-                builder: (context, state) => const PlaceholderFeatureScreen(
-                  title: 'AI봇',
-                  icon: Icons.chat_bubble_rounded,
-                ),
+                builder: (context, state) => const AIChatScreen(),
               ),
             ],
           ),
