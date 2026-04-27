@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../models/food_log_model.dart';
 import 'auth_repository.dart';
 
 final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
@@ -75,6 +76,14 @@ class FoodRepository {
     required String uid,
     required DateTime date,
   }) async {
+    final logs = await getTodayLog(uid: uid, date: date);
+    return logs.map((log) => log.toJson()).toList();
+  }
+
+  Future<List<FoodLogModel>> getTodayLog({
+    required String uid,
+    required DateTime date,
+  }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     final snapshot = await _firestore
@@ -84,7 +93,56 @@ class FoodRepository {
         .orderBy('date', descending: true)
         .get();
 
-    return snapshot.docs.map((doc) => doc.data()).toList();
+    return snapshot.docs
+        .map((doc) => FoodLogModel.fromJson({'id': doc.id, ...doc.data()}))
+        .toList();
+  }
+
+  Future<void> addFoodEntry(FoodLogModel food) async {
+    final dateKey = DateFormat('yyyy-MM-dd').format(food.date);
+    final foodRef = _firestore.collection('users/${food.uid}/food_logs').doc();
+    final dailyRef = _firestore.doc('users/${food.uid}/daily_logs/$dateKey');
+    final batch = _firestore.batch();
+    batch.set(foodRef, {
+      ...food.copyWith(id: foodRef.id, createdAt: DateTime.now()).toJson(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(dailyRef, {
+      'consumedCalories': FieldValue.increment(food.calories),
+      'carbs': FieldValue.increment(food.carbs),
+      'protein': FieldValue.increment(food.protein),
+      'fat': FieldValue.increment(food.fat),
+      'mealCounts.${food.mealType}': FieldValue.increment(1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await batch.commit();
+  }
+
+  Future<void> deleteFoodEntry({
+    required String uid,
+    required String foodId,
+  }) async {
+    final foodRef = _firestore.doc('users/$uid/food_logs/$foodId');
+    final snapshot = await foodRef.get();
+    final data = snapshot.data();
+    if (data == null) {
+      return;
+    }
+
+    final food = FoodLogModel.fromJson({'id': foodId, ...data});
+    final dateKey = DateFormat('yyyy-MM-dd').format(food.date);
+    final dailyRef = _firestore.doc('users/$uid/daily_logs/$dateKey');
+    final batch = _firestore.batch();
+    batch.delete(foodRef);
+    batch.set(dailyRef, {
+      'consumedCalories': FieldValue.increment(-food.calories),
+      'carbs': FieldValue.increment(-food.carbs),
+      'protein': FieldValue.increment(-food.protein),
+      'fat': FieldValue.increment(-food.fat),
+      'mealCounts.${food.mealType}': FieldValue.increment(-1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await batch.commit();
   }
 
   Future<List<Map<String, dynamic>>> getFoodAlbum(String uid) async {
