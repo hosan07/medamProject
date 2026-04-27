@@ -24,6 +24,7 @@ import '../features/mypage/screens/notification_settings_screen.dart';
 import '../features/mypage/screens/profile_screen.dart';
 import '../features/mypage/screens/settings_screen.dart';
 import '../features/mypage/screens/simple_mypage_route_screen.dart';
+import '../features/mypage/screens/subscription_screen.dart';
 import '../features/onboarding/screens/step10_water.dart';
 import '../features/onboarding/screens/step11_exercise.dart';
 import '../features/onboarding/screens/step12_ai_coach.dart';
@@ -199,6 +200,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notification-settings',
         builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/subscription',
+        builder: (context, state) => const SubscriptionScreen(),
       ),
       GoRoute(
         path: '/notices',

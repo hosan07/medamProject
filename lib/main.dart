@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'core/ads/ad_manager.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -10,6 +11,8 @@ Future<void> main() async {
 
   // Firebase 기반 기능(Auth, Firestore, Analytics 등)을 앱 시작 전에 준비합니다.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AdManager.initialize();
+  AdManager.instance.initInterstitialAd();
 
   runApp(const ProviderScope(child: MedamApp()));
 }

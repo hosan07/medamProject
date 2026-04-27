@@ -416,6 +416,11 @@ class _MenuList extends ConsumerWidget {
             onTap: () => context.push('/notification-settings'),
           ),
           _MenuTile(
+            icon: Icons.workspace_premium_outlined,
+            title: '구독 및 크레딧',
+            onTap: () => context.push('/subscription'),
+          ),
+          _MenuTile(
             icon: Icons.campaign_outlined,
             title: '공지사항',
             onTap: () => context.push('/notices'),

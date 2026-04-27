@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ads/ad_manager.dart';
+import '../../mypage/providers/monetization_provider.dart';
 import '../providers/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -10,6 +12,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeData = ref.watch(todayHomeDataProvider);
+    final showAds = !ref.watch(isSubscribedProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,18 +49,20 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: homeData.when(
-        data: (data) => _HomeBody(data: data),
+        data: (data) => _HomeBody(data: data, showAds: showAds),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _HomeBody(data: TodayHomeData.empty()),
+        error: (error, stackTrace) =>
+            _HomeBody(data: TodayHomeData.empty(), showAds: showAds),
       ),
     );
   }
 }
 
 class _HomeBody extends StatelessWidget {
-  const _HomeBody({required this.data});
+  const _HomeBody({required this.data, required this.showAds});
 
   final TodayHomeData data;
+  final bool showAds;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +84,10 @@ class _HomeBody extends StatelessWidget {
                           _TodayRecordCard(data: data),
                           const SizedBox(height: 14),
                           _MealAddSection(data: data),
+                          if (showAds) ...[
+                            const SizedBox(height: 14),
+                            const _HomeAdCard(),
+                          ],
                           const SizedBox(height: 14),
                           _ChangeSection(data: data),
                           const SizedBox(height: 14),
@@ -105,6 +114,10 @@ class _HomeBody extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                         _MealAddSection(data: data),
+                        if (showAds) ...[
+                          const SizedBox(height: 14),
+                          const _HomeAdCard(),
+                        ],
                         const SizedBox(height: 14),
                         _ChangeSection(data: data),
                       ],
@@ -116,6 +129,31 @@ class _HomeBody extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HomeAdCard extends StatelessWidget {
+  const _HomeAdCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '추천',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const MedamBannerAd(),
+        ],
+      ),
     );
   }
 }
