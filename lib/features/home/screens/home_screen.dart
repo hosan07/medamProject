@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ads/ad_manager.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../mypage/providers/monetization_provider.dart';
 import '../providers/home_provider.dart';
 
@@ -344,6 +345,7 @@ class _MealAddSection extends StatelessWidget {
                   label: item.$1,
                   icon: item.$2,
                   count: count,
+                  onTap: () => _onMealTap(context, item.$1),
                 );
               },
               separatorBuilder: (context, index) => const SizedBox(width: 10),
@@ -354,6 +356,23 @@ class _MealAddSection extends StatelessWidget {
       ),
     );
   }
+
+  void _onMealTap(BuildContext context, String mealType) {
+    if (!const ['아침', '점심', '저녁', '간식'].contains(mealType)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$mealType 기록은 다음 단계에서 연결할게요.')));
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) => _MealEntryBottomSheet(mealType: mealType),
+    );
+  }
 }
 
 class _MealAddCard extends StatelessWidget {
@@ -361,39 +380,204 @@ class _MealAddCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.count,
+    required this.onTap,
   });
 
   final String label;
   final IconData icon;
   final int count;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 104,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const Spacer(),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.add_circle_rounded, size: 18),
-              const SizedBox(width: 4),
-              Text(count > 0 ? '$count개' : '추가'),
-            ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: 104,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const Spacer(),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.add_circle_rounded, size: 18),
+                const SizedBox(width: 4),
+                Text(count > 0 ? '$count개' : '추가'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _MealEntryBottomSheet extends ConsumerStatefulWidget {
+  const _MealEntryBottomSheet({required this.mealType});
+
+  final String mealType;
+
+  @override
+  ConsumerState<_MealEntryBottomSheet> createState() =>
+      _MealEntryBottomSheetState();
+}
+
+class _MealEntryBottomSheetState extends ConsumerState<_MealEntryBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _foodNameController = TextEditingController();
+  final _caloriesController = TextEditingController();
+  final _carbsController = TextEditingController();
+  final _proteinController = TextEditingController();
+  final _fatController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _foodNameController.dispose();
+    _caloriesController.dispose();
+    _carbsController.dispose();
+    _proteinController.dispose();
+    _fatController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '${widget.mealType} 식단 추가',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _foodNameController,
+              decoration: const InputDecoration(labelText: '음식명'),
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? '음식명을 입력해 주세요.'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _caloriesController,
+              decoration: const InputDecoration(labelText: '칼로리(kcal)'),
+              keyboardType: TextInputType.number,
+              validator: _requiredNumber,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _carbsController,
+                    decoration: const InputDecoration(labelText: '탄수화물(g)'),
+                    keyboardType: TextInputType.number,
+                    validator: _requiredNumber,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _proteinController,
+                    decoration: const InputDecoration(labelText: '단백질(g)'),
+                    keyboardType: TextInputType.number,
+                    validator: _requiredNumber,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _fatController,
+                    decoration: const InputDecoration(labelText: '지방(g)'),
+                    keyboardType: TextInputType.number,
+                    validator: _requiredNumber,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: _isSaving ? null : _save,
+              child: _isSaving
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('저장하기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _requiredNumber(String? value) {
+    final number = int.tryParse(value?.trim() ?? '');
+    if (number == null || number < 0) {
+      return '0 이상 숫자';
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await ref
+          .read(homeRepositoryProvider)
+          .addMeal(
+            uid: user.uid,
+            mealType: widget.mealType,
+            foodName: _foodNameController.text.trim(),
+            calories: int.parse(_caloriesController.text.trim()),
+            carbs: int.parse(_carbsController.text.trim()),
+            protein: int.parse(_proteinController.text.trim()),
+            fat: int.parse(_fatController.text.trim()),
+          );
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 }
 

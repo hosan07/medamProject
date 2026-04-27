@@ -74,6 +74,18 @@ service cloud.firestore {
       }
     }
 
+    match /food_logs/{uid}/daily/{date} {
+      allow read, write: if isOwner(uid);
+
+      match /meals/{mealId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    match /exercise_logs/{uid}/daily/{date} {
+      allow read, write: if isOwner(uid);
+    }
+
     match /chats/{chatId} {
       // chats/{chatId}: read/write only if request.auth.uid is in participants.
       allow create: if signedIn()

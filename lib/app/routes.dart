@@ -17,6 +17,8 @@ import '../features/community/screens/chat_room_screen.dart';
 import '../features/community/screens/community_screen.dart';
 import '../features/community/screens/post_detail_screen.dart';
 import '../features/community/screens/post_write_screen.dart';
+import '../features/home/screens/daily_detail_screen.dart';
+import '../features/home/screens/exercise_add_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
 import '../features/mypage/screens/mypage_screen.dart';
@@ -250,7 +252,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/daily-detail',
-        builder: (context, state) => const MedamRouteScreen(title: '일일 상세'),
+        builder: (context, state) => const DailyDetailScreen(),
       ),
       GoRoute(
         path: '/body-album',
@@ -266,7 +268,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/exercise',
-        builder: (context, state) => const MedamRouteScreen(title: '운동 추가'),
+        builder: (context, state) => const ExerciseAddScreen(),
       ),
       GoRoute(
         path: '/exercise-detail',
