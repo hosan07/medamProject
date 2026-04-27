@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/widgets/placeholder_feature_screen.dart';
 import '../data/repositories/auth_repository.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
@@ -20,6 +19,11 @@ import '../features/community/screens/post_detail_screen.dart';
 import '../features/community/screens/post_write_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
+import '../features/mypage/screens/mypage_screen.dart';
+import '../features/mypage/screens/notification_settings_screen.dart';
+import '../features/mypage/screens/profile_screen.dart';
+import '../features/mypage/screens/settings_screen.dart';
+import '../features/mypage/screens/simple_mypage_route_screen.dart';
 import '../features/onboarding/screens/step10_water.dart';
 import '../features/onboarding/screens/step11_exercise.dart';
 import '../features/onboarding/screens/step12_ai_coach.dart';
@@ -159,10 +163,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: MedamRouteName.mypage,
                 path: '/mypage',
-                builder: (context, state) => const PlaceholderFeatureScreen(
-                  title: '마이페이지',
-                  icon: Icons.person_rounded,
-                ),
+                builder: (context, state) => const MyPageScreen(),
               ),
             ],
           ),
@@ -193,7 +194,36 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: MedamRouteName.settings,
         path: '/settings',
-        builder: (context, state) => const MedamRouteScreen(title: '설정'),
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/notification-settings',
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/notices',
+        builder: (context, state) =>
+            const SimpleMyPageRouteScreen(title: '공지사항'),
+      ),
+      GoRoute(
+        path: '/blocked-users',
+        builder: (context, state) =>
+            const SimpleMyPageRouteScreen(title: '차단 유저 관리'),
+      ),
+      GoRoute(
+        path: '/follow-requests',
+        builder: (context, state) =>
+            const SimpleMyPageRouteScreen(title: '팔로우 요청 관리'),
+      ),
+      GoRoute(
+        path: '/release-notes',
+        builder: (context, state) =>
+            const SimpleMyPageRouteScreen(title: '업데이트 내역'),
+      ),
+      GoRoute(
+        path: '/terms-security',
+        builder: (context, state) =>
+            const SimpleMyPageRouteScreen(title: '약관 및 보안'),
       ),
       GoRoute(
         name: MedamRouteName.calendar,
@@ -210,7 +240,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid'] ?? '';
-          return MedamRouteScreen(title: '프로필', subtitle: uid);
+          return ProfileScreen(uid: uid);
         },
       ),
       GoRoute(

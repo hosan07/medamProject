@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const Color medamPrimaryColor = Color(0xFF4CAF82);
 const Color medamDarkBackgroundColor = Color(0xFF131416);
@@ -9,15 +10,39 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
 );
 
 class ThemeModeNotifier extends Notifier<ThemeMode> {
+  static const _storageKey = 'theme_mode';
+
   @override
-  ThemeMode build() => ThemeMode.system;
+  ThemeMode build() {
+    _loadSavedThemeMode();
+    return ThemeMode.system;
+  }
 
-  // 초기 세팅 단계에서는 메모리 상태로 두고, 설정 화면에서 SharedPreferences 저장을 붙입니다.
-  void setSystem() => state = ThemeMode.system;
+  Future<void> setSystem() => _setThemeMode(ThemeMode.system);
 
-  void setLight() => state = ThemeMode.light;
+  Future<void> setLight() => _setThemeMode(ThemeMode.light);
 
-  void setDark() => state = ThemeMode.dark;
+  Future<void> setDark() => _setThemeMode(ThemeMode.dark);
+
+  Future<void> _loadSavedThemeMode() async {
+    final preferences = await SharedPreferences.getInstance();
+    final saved = preferences.getString(_storageKey);
+    if (saved == null) {
+      return;
+    }
+
+    state = switch (saved) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    state = mode;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_storageKey, mode.name);
+  }
 }
 
 class MedamTheme {
