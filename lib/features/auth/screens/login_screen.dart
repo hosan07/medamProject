@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/widgets/medam_logo.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 
 enum _SignInProviderType { google, apple }
@@ -104,9 +105,8 @@ class LoginScreen extends ConsumerWidget {
   }
 
   String _authErrorMessage(Object error) {
-    final raw = error.toString();
-    if (raw.contains('canceled') || raw.contains('cancelled')) {
-      return '로그인이 취소되었어요.';
+    if (error is AuthRepositoryException) {
+      return error.message;
     }
     return '로그인 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
   }

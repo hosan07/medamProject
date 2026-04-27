@@ -33,6 +33,7 @@ dependencies:
   shared_preferences: any
   flutter_secure_storage: any
   dio: any
+  crypto: any
   google_sign_in: any
   sign_in_with_apple: any
   flutter_local_notifications: any
