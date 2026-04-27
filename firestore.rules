@@ -86,6 +86,10 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
     }
 
+    match /body_photos/{uid}/photos/{photoId} {
+      allow read, write: if isOwner(uid);
+    }
+
     match /chats/{chatId} {
       // chats/{chatId}: read/write only if request.auth.uid is in participants.
       allow create: if signedIn()

@@ -172,6 +172,23 @@ class FoodRepository {
     });
   }
 
+  Future<void> saveBodyPhotoToPublicPath({
+    required String uid,
+    required String imageUrl,
+    double? weight,
+    String? note,
+  }) async {
+    final now = DateTime.now();
+    await _firestore.collection('body_photos/$uid/photos').add({
+      'uid': uid,
+      'imageUrl': imageUrl,
+      'weight': weight,
+      'note': note,
+      'date': Timestamp.fromDate(now),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Stream<List<BodyPhotoEntry>> watchBodyPhotos(String uid) {
     return _firestore
         .collection('users/$uid/body_photos')

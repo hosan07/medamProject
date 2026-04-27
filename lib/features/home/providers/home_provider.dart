@@ -123,6 +123,7 @@ class HomeRepository {
     required int carbs,
     required int protein,
     required int fat,
+    String? imageUrl,
   }) async {
     final now = DateTime.now();
     final dateKey = _dateKey(now);
@@ -138,6 +139,7 @@ class HomeRepository {
       'carbs': carbs,
       'protein': protein,
       'fat': fat,
+      'imageUrl': imageUrl,
       'date': Timestamp.fromDate(DateTime(now.year, now.month, now.day)),
       'createdAt': FieldValue.serverTimestamp(),
     });

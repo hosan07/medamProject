@@ -61,6 +61,10 @@ class _BodyCameraScreenState extends ConsumerState<BodyCameraScreen> {
       file: file,
       folder: 'body_photos',
     );
+    await repository.saveBodyPhotoToPublicPath(
+      uid: user.uid,
+      imageUrl: imageUrl,
+    );
     await repository.saveBodyPhoto(uid: user.uid, imageUrl: imageUrl);
     await ImageGallerySaver.saveFile(file.path);
     ref.invalidate(bodyPhotoAlbumProvider);
