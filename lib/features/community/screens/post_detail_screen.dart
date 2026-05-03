@@ -75,7 +75,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                             const SizedBox(height: 18),
                             Text(
                               data.title,
-                              style: Theme.of(context).textTheme.headlineSmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
                                   ?.copyWith(fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 12),
@@ -96,7 +98,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                             const Divider(height: 34),
                             Text(
                               '댓글 ${data.commentCount}',
-                              style: Theme.of(context).textTheme.titleMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 8),
@@ -150,20 +154,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         .read(firebaseFirestoreProvider)
         .doc('users/${user.uid}')
         .get();
-    final nickname =
-        profile.data()?['nickname'] as String? ??
+    final nickname = profile.data()?['nickname'] as String? ??
         user.displayName ??
         user.email ??
         '미담러';
+    final profileImage =
+        profile.data()?['profileImage'] as String? ?? user.photoURL;
 
-    await ref
-        .read(communityRepositoryProvider)
-        .addComment(
+    await ref.read(communityRepositoryProvider).addComment(
           postId: post.id,
           uid: user.uid,
           nickname: nickname,
           content: content,
           parentId: _replyParentId,
+          senderProfileImage: profileImage,
         );
     _commentController.clear();
     setState(() => _replyParentId = null);
@@ -228,9 +232,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     if (uid == null) {
       return;
     }
-    await ref
-        .read(communityRepositoryProvider)
-        .reportPost(
+    await ref.read(communityRepositoryProvider).reportPost(
           reporterUid: uid,
           targetUid: post.uid,
           postId: post.id,
@@ -248,9 +250,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     if (uid == null) {
       return;
     }
-    await ref
-        .read(communityRepositoryProvider)
-        .reportPost(
+    await ref.read(communityRepositoryProvider).reportPost(
           reporterUid: uid,
           targetUid: post.uid,
           postId: post.id,
@@ -281,9 +281,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     if (uid == null || uid == post.uid) {
       return;
     }
-    final chatId = await ref
-        .read(communityChatRepositoryProvider)
-        .openRoom(uid, post.uid);
+    final chatId =
+        await ref.read(communityChatRepositoryProvider).openRoom(uid, post.uid);
     if (mounted) {
       context.push('/community/chats/$chatId');
     }
@@ -303,9 +302,8 @@ class _PostHeader extends StatelessWidget {
           backgroundImage: post.profileImage == null
               ? null
               : NetworkImage(post.profileImage!),
-          child: post.profileImage == null
-              ? Text(_initial(post.nickname))
-              : null,
+          child:
+              post.profileImage == null ? Text(_initial(post.nickname)) : null,
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -376,8 +374,8 @@ class _PostActions extends ConsumerWidget {
           onPressed: uid == null
               ? null
               : () => ref
-                    .read(communityRepositoryProvider)
-                    .toggleLike(postId: post.id, uid: uid),
+                  .read(communityRepositoryProvider)
+                  .toggleLike(postId: post.id, uid: uid),
           icon: Icon(
             liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           ),
@@ -387,8 +385,8 @@ class _PostActions extends ConsumerWidget {
           onPressed: uid == null
               ? null
               : () => ref
-                    .read(communityRepositoryProvider)
-                    .toggleScrap(postId: post.id, uid: uid),
+                  .read(communityRepositoryProvider)
+                  .toggleScrap(postId: post.id, uid: uid),
           icon: Icon(
             scrapped ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
           ),

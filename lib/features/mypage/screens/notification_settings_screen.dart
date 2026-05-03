@@ -28,35 +28,41 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 _SwitchTile(
                   title: '진동',
                   value: data.vibration,
+                  enabled: data.receiveAll,
                   onChanged: (value) =>
                       _save(ref, data.copyWith(vibration: value)),
                 ),
                 _SwitchTile(
                   title: '소리',
                   value: data.sound,
+                  enabled: data.receiveAll,
                   onChanged: (value) => _save(ref, data.copyWith(sound: value)),
                 ),
                 const SizedBox(height: 12),
                 _SwitchTile(
                   title: '댓글알림',
                   value: data.comment,
+                  enabled: data.receiveAll,
                   onChanged: (value) =>
                       _save(ref, data.copyWith(comment: value)),
                 ),
                 _SwitchTile(
                   title: '좋아요알림',
                   value: data.like,
+                  enabled: data.receiveAll,
                   onChanged: (value) => _save(ref, data.copyWith(like: value)),
                 ),
                 _SwitchTile(
                   title: '팔로우알림',
                   value: data.follow,
+                  enabled: data.receiveAll,
                   onChanged: (value) =>
                       _save(ref, data.copyWith(follow: value)),
                 ),
                 _SwitchTile(
                   title: '채팅알림',
                   value: data.chat,
+                  enabled: data.receiveAll,
                   onChanged: (value) => _save(ref, data.copyWith(chat: value)),
                 ),
               ],
@@ -79,11 +85,13 @@ class _SwitchTile extends StatelessWidget {
     required this.title,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String title;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +100,7 @@ class _SwitchTile extends StatelessWidget {
       child: SwitchListTile(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
         value: value,
-        onChanged: onChanged,
+        onChanged: enabled ? onChanged : null,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );

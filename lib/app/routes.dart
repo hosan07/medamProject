@@ -29,6 +29,7 @@ import '../features/mypage/screens/profile_screen.dart';
 import '../features/mypage/screens/settings_screen.dart';
 import '../features/mypage/screens/simple_mypage_route_screen.dart';
 import '../features/mypage/screens/subscription_screen.dart';
+import '../features/notification/screens/notification_screen.dart';
 import '../features/onboarding/screens/step10_water.dart';
 import '../features/onboarding/screens/step11_exercise.dart';
 import '../features/onboarding/screens/step12_ai_coach.dart';
@@ -247,7 +248,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: MedamRouteName.notification,
         path: '/notification',
-        builder: (context, state) => const MedamRouteScreen(title: '알림'),
+        builder: (context, state) => const NotificationScreen(),
       ),
       GoRoute(
         name: MedamRouteName.profile,

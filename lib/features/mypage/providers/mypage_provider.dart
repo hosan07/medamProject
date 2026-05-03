@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -60,8 +61,8 @@ final otherProfileProvider = FutureProvider.family<PublicProfileData, String>((
 
 final notificationSettingsProvider =
     AsyncNotifierProvider<NotificationSettingsNotifier, NotificationSettings>(
-      NotificationSettingsNotifier.new,
-    );
+  NotificationSettingsNotifier.new,
+);
 
 class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
   @override
@@ -72,6 +73,12 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
     }
 
     final firestore = ref.watch(firebaseFirestoreProvider);
+    final doc =
+        await firestore.doc('users/${user.uid}/settings/notification').get();
+    if (doc.exists) {
+      return NotificationSettings.fromJson(doc.data());
+    }
+
     final profile = await firestore.doc('users/${user.uid}').get();
     final settings = profile.data()?['settings'];
     if (settings is Map<String, dynamic>) {
@@ -81,11 +88,7 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
       }
     }
 
-    // 기존 세션에서 저장된 하위 문서도 읽어 앱 업데이트 전 데이터를 유지합니다.
-    final doc = await firestore
-        .doc('users/${user.uid}/settings/notification')
-        .get();
-    return NotificationSettings.fromJson(doc.data());
+    return const NotificationSettings();
   }
 
   Future<void> save(NotificationSettings settings) async {
@@ -101,11 +104,33 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
       'users/${user.uid}/settings/notification',
     );
     batch.set(settingsRef, settings.toJson(), SetOptions(merge: true));
-    batch.set(profileRef, {
-      'settings': {'notification': settings.toPlainJson()},
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        profileRef,
+        {
+          'settings': {'notification': settings.toPlainJson()},
+          if (!settings.receiveAll) 'fcmToken': FieldValue.delete(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
+
+    if (!settings.receiveAll) {
+      await FirebaseMessaging.instance.deleteToken();
+      return;
+    }
+
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    final token = await FirebaseMessaging.instance.getToken();
+    if (token != null && token.isNotEmpty) {
+      await profileRef.set({
+        'fcmToken': token,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
   }
 }
 
@@ -246,7 +271,7 @@ class AlbumItem {
 
 class NotificationSettings {
   const NotificationSettings({
-    this.enabled = true,
+    this.receiveAll = true,
     this.vibration = true,
     this.sound = true,
     this.comment = true,
@@ -257,7 +282,8 @@ class NotificationSettings {
 
   factory NotificationSettings.fromJson(Map<String, dynamic>? json) {
     return NotificationSettings(
-      enabled: json?['enabled'] as bool? ?? true,
+      receiveAll:
+          json?['receiveAll'] as bool? ?? json?['enabled'] as bool? ?? true,
       vibration: json?['vibration'] as bool? ?? true,
       sound: json?['sound'] as bool? ?? true,
       comment: json?['comment'] as bool? ?? true,
@@ -267,7 +293,7 @@ class NotificationSettings {
     );
   }
 
-  final bool enabled;
+  final bool receiveAll;
   final bool vibration;
   final bool sound;
   final bool comment;
@@ -275,9 +301,11 @@ class NotificationSettings {
   final bool follow;
   final bool chat;
 
+  bool get enabled => receiveAll;
+
   Map<String, Object?> toJson() {
     return {
-      'enabled': enabled,
+      'receiveAll': receiveAll,
       'vibration': vibration,
       'sound': sound,
       'comment': comment,
@@ -290,7 +318,7 @@ class NotificationSettings {
 
   Map<String, Object?> toPlainJson() {
     return {
-      'enabled': enabled,
+      'receiveAll': receiveAll,
       'vibration': vibration,
       'sound': sound,
       'comment': comment,
@@ -301,6 +329,7 @@ class NotificationSettings {
   }
 
   NotificationSettings copyWith({
+    bool? receiveAll,
     bool? enabled,
     bool? vibration,
     bool? sound,
@@ -310,7 +339,7 @@ class NotificationSettings {
     bool? chat,
   }) {
     return NotificationSettings(
-      enabled: enabled ?? this.enabled,
+      receiveAll: receiveAll ?? enabled ?? this.receiveAll,
       vibration: vibration ?? this.vibration,
       sound: sound ?? this.sound,
       comment: comment ?? this.comment,

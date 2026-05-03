@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ads/ad_manager.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mypage/providers/monetization_provider.dart';
+import '../../notification/providers/notification_provider.dart';
 import '../providers/home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -14,6 +15,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeData = ref.watch(todayHomeDataProvider);
     final showAds = !ref.watch(isSubscribedProvider);
+    final hasUnread = ref.watch(hasUnreadNotificationsProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,18 +34,19 @@ class HomeScreen extends ConsumerWidget {
                 onPressed: () => context.push('/notification'),
                 icon: const Icon(Icons.notifications_rounded),
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
+              if (hasUnread)
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF3B30),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(width: 8),
@@ -232,7 +235,9 @@ class _TodayRecordCard extends StatelessWidget {
                       children: [
                         Text(
                           '${data.consumedCalories}',
-                          style: Theme.of(context).textTheme.titleLarge
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
                               ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         Text('/ ${data.targetCalories}kcal'),
@@ -559,9 +564,7 @@ class _MealEntryBottomSheetState extends ConsumerState<_MealEntryBottomSheet> {
 
     setState(() => _isSaving = true);
     try {
-      await ref
-          .read(homeRepositoryProvider)
-          .addMeal(
+      await ref.read(homeRepositoryProvider).addMeal(
             uid: user.uid,
             mealType: widget.mealType,
             foodName: _foodNameController.text.trim(),
@@ -639,10 +642,10 @@ class _BmiChip extends StatelessWidget {
     final label = value < 18.5
         ? '저체중'
         : value < 23
-        ? '정상'
-        : value < 25
-        ? '과체중'
-        : '관리 필요';
+            ? '정상'
+            : value < 25
+                ? '과체중'
+                : '관리 필요';
     final color = value < 23
         ? Theme.of(context).colorScheme.primary
         : const Color(0xFFE59F3A);
@@ -810,7 +813,9 @@ class _ActivitySection extends StatelessWidget {
                   children: [
                     Text(
                       '${data.exerciseMinutes}분',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     Text(data.exerciseType),
