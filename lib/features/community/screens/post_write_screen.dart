@@ -131,6 +131,9 @@ class _PostWriteScreenState extends ConsumerState<PostWriteScreen> {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
     if (user == null || title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제목과 내용을 입력해주세요.')));
       return;
     }
 
@@ -158,6 +161,12 @@ class _PostWriteScreenState extends ConsumerState<PostWriteScreen> {
           );
       if (mounted) {
         context.go('/community/posts/$postId');
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('게시글 저장에 실패했어요: $error')));
       }
     } finally {
       if (mounted) {

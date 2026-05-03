@@ -31,16 +31,17 @@ class CommunityChatRepository {
     return _firestore
         .collection('chats')
         .where('participants', arrayContains: uid)
-        .orderBy('lastAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          final rooms = snapshot.docs
               .map(
                 (doc) =>
                     CommunityChatRoom.fromJson({'id': doc.id, ...doc.data()}),
               )
-              .toList(),
-        );
+              .toList();
+          rooms.sort((a, b) => b.lastAt.compareTo(a.lastAt));
+          return rooms;
+        });
   }
 
   Stream<List<CommunityChatMessage>> watchMessages(String chatId) {
@@ -64,12 +65,19 @@ class CommunityChatRepository {
   Future<String> openRoom(String uid, String targetUid) async {
     final participants = [uid, targetUid]..sort();
     final chatId = participants.join('_');
-    await _firestore.doc('chats/$chatId').set({
+    final roomRef = _firestore.doc('chats/$chatId');
+    final room = await roomRef.get();
+    if (room.exists) {
+      return chatId;
+    }
+
+    await roomRef.set({
       'participants': participants,
       'lastMessage': '',
       'lastAt': FieldValue.serverTimestamp(),
       'unreadCount': {uid: 0, targetUid: 0},
-    }, SetOptions(merge: true));
+      'createdAt': FieldValue.serverTimestamp(),
+    });
     return chatId;
   }
 
@@ -128,15 +136,22 @@ class CommunityChatRepository {
 
     final unreadMessages = await _firestore
         .collection('chats/$chatId/messages')
-        .where('uid', isNotEqualTo: uid)
+        .orderBy('createdAt', descending: true)
         .limit(30)
         .get();
     final batch = _firestore.batch();
+    var hasWrites = false;
     for (final doc in unreadMessages.docs) {
+      if (doc.data()['uid'] == uid) {
+        continue;
+      }
       batch.update(doc.reference, {
         'readBy': FieldValue.arrayUnion([uid]),
       });
+      hasWrites = true;
     }
-    await batch.commit();
+    if (hasWrites) {
+      await batch.commit();
+    }
   }
 }

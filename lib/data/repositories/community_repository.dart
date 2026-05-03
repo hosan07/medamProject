@@ -27,24 +27,22 @@ class CommunityRepository {
   final FoodRepository _storageUploader;
 
   Stream<List<PostModel>> watchPosts(String category, {int limit = 30}) {
-    Query<Map<String, dynamic>> query = _firestore
+    // 복합 인덱스 없이도 개발/초기 운영 환경에서 목록이 뜨도록 서버 쿼리는 단순화합니다.
+    // 삭제/차단/카테고리 필터는 앱에서 적용합니다.
+    return _firestore
         .collection('posts')
-        .where('isDeleted', isEqualTo: false)
-        .where('isBlocked', isEqualTo: false);
-
-    if (category != '전체') {
-      query = query.where('category', isEqualTo: category);
-    }
-
-    return query
         .orderBy('createdAt', descending: true)
-        .limit(limit)
+        .limit(category == '전체' ? limit : limit * 3)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          final posts = snapshot.docs
               .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))
-              .toList(),
-        );
+              .where((post) => !post.isDeleted && !post.isBlocked)
+              .where((post) => category == '전체' || post.category == category)
+              .toList();
+          posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return posts.take(limit).toList();
+        });
   }
 
   Stream<PostModel?> watchPost(String postId) {
@@ -60,16 +58,30 @@ class CommunityRepository {
   Stream<List<CommentModel>> watchComments(String postId) {
     return _firestore
         .collection('posts/$postId/comments')
-        .where('isDeleted', isEqualTo: false)
         .orderBy('createdAt')
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          return snapshot.docs
               .map(
                 (doc) => CommentModel.fromJson({'id': doc.id, ...doc.data()}),
               )
-              .toList(),
-        );
+              .where((comment) => !comment.isDeleted)
+              .toList();
+        });
+  }
+
+  Stream<bool> watchLikeState({required String postId, required String uid}) {
+    return _firestore
+        .doc('posts/$postId/likes/$uid')
+        .snapshots()
+        .map((doc) => doc.exists);
+  }
+
+  Stream<bool> watchScrapState({required String postId, required String uid}) {
+    return _firestore
+        .doc('posts/$postId/scraps/$uid')
+        .snapshots()
+        .map((doc) => doc.exists);
   }
 
   Future<String> createPost({

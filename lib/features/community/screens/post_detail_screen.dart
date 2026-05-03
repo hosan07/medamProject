@@ -236,6 +236,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           postId: post.id,
           reason: '부적절한 게시글',
         );
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('신고가 접수되었어요.')));
+    }
   }
 
   Future<void> _blockUser(PostModel post) async {
@@ -245,7 +250,20 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     }
     await ref
         .read(communityRepositoryProvider)
+        .reportPost(
+          reporterUid: uid,
+          targetUid: post.uid,
+          postId: post.id,
+          reason: '사용자 차단',
+        );
+    await ref
+        .read(communityRepositoryProvider)
         .blockUser(uid: uid, targetUid: post.uid);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('차단하고 신고 기록을 남겼어요.')));
+    }
   }
 
   Future<void> _followUser(PostModel post) async {
@@ -349,6 +367,9 @@ class _PostActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(currentUserProvider)?.uid;
+    final liked = ref.watch(postLikeStateProvider(post.id)).value ?? false;
+    final scrapped = ref.watch(postScrapStateProvider(post.id)).value ?? false;
+
     return Row(
       children: [
         TextButton.icon(
@@ -357,7 +378,9 @@ class _PostActions extends ConsumerWidget {
               : () => ref
                     .read(communityRepositoryProvider)
                     .toggleLike(postId: post.id, uid: uid),
-          icon: const Icon(Icons.favorite_border_rounded),
+          icon: Icon(
+            liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          ),
           label: Text('좋아요 ${post.likeCount}'),
         ),
         TextButton.icon(
@@ -366,7 +389,9 @@ class _PostActions extends ConsumerWidget {
               : () => ref
                     .read(communityRepositoryProvider)
                     .toggleScrap(postId: post.id, uid: uid),
-          icon: const Icon(Icons.bookmark_border_rounded),
+          icon: Icon(
+            scrapped ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+          ),
           label: Text('스크랩 ${post.scrapCount}'),
         ),
         TextButton.icon(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../auth/providers/auth_provider.dart';
 import '../providers/community_provider.dart';
 import '../widgets/post_card.dart';
 
@@ -12,6 +13,12 @@ class CommunityScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedCommunityCategoryProvider);
     final posts = ref.watch(communityPostsProvider);
+    final uid = ref.watch(currentUserProvider)?.uid;
+    final unreadCount =
+        ref.watch(chatRoomsProvider).value?.fold<int>(0, (total, room) {
+          return total + (uid == null ? 0 : room.unreadCount[uid] ?? 0);
+        }) ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
@@ -20,7 +27,11 @@ class CommunityScreen extends ConsumerWidget {
           IconButton(
             tooltip: '쪽지함',
             onPressed: () => context.push('/community/chats'),
-            icon: const Icon(Icons.mail_outline_rounded),
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              child: const Icon(Icons.mail_outline_rounded),
+            ),
           ),
         ],
       ),
@@ -106,7 +117,7 @@ class _CommunityEmpty extends StatelessWidget {
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(24),
-        child: Text('아직 게시글이 없어요.\n첫 기록을 나눠보세요.', textAlign: TextAlign.center),
+        child: Text('아직 게시글이 없어요', textAlign: TextAlign.center),
       ),
     );
   }

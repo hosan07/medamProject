@@ -42,6 +42,32 @@ final commentsProvider = StreamProvider.family<List<CommentModel>, String>((
   return ref.watch(communityRepositoryProvider).watchComments(postId);
 });
 
+final postLikeStateProvider = StreamProvider.family<bool, String>((
+  ref,
+  postId,
+) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
+    return Stream<bool>.value(false);
+  }
+  return ref
+      .watch(communityRepositoryProvider)
+      .watchLikeState(postId: postId, uid: user.uid);
+});
+
+final postScrapStateProvider = StreamProvider.family<bool, String>((
+  ref,
+  postId,
+) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
+    return Stream<bool>.value(false);
+  }
+  return ref
+      .watch(communityRepositoryProvider)
+      .watchScrapState(postId: postId, uid: user.uid);
+});
+
 final chatRoomsProvider = StreamProvider<List<CommunityChatRoom>>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
