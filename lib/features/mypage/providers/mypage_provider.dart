@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../data/models/post_model.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -12,51 +13,26 @@ final myPageDataProvider = FutureProvider<MyPageData>((ref) async {
   }
 
   final firestore = ref.watch(firebaseFirestoreProvider);
-  final profileFuture = firestore.doc('users/${user.uid}').get();
-  final feedFuture = firestore
-      .collection('posts')
-      .where('uid', isEqualTo: user.uid)
-      .where('isDeleted', isEqualTo: false)
-      .orderBy('createdAt', descending: true)
-      .limit(30)
-      .get();
-  final followersFuture = firestore
-      .collection('users/${user.uid}/followers')
-      .count()
-      .get();
-  final followingFuture = firestore
-      .collection('users/${user.uid}/following')
-      .count()
-      .get();
-  final bodyFuture = firestore
-      .collection('users/${user.uid}/body_photos')
-      .orderBy('date', descending: true)
-      .limit(40)
-      .get();
-  final foodFuture = firestore
-      .collection('users/${user.uid}/food_logs')
-      .orderBy('createdAt', descending: true)
-      .limit(40)
-      .get();
+  final profile = await _readUserProfile(firestore, user.uid);
+  final posts = await _readUserPosts(firestore, user.uid);
+  final followers = await _readCount(
+    firestore.collection('users/${user.uid}/followers'),
+    fallback: (profile.data()?['followerCount'] as num?)?.toInt() ?? 0,
+  );
+  final following = await _readCount(
+    firestore.collection('users/${user.uid}/following'),
+    fallback: (profile.data()?['followingCount'] as num?)?.toInt() ?? 0,
+  );
+  final albumItems = await _readAlbumItems(firestore, user.uid);
 
-  final results = await Future.wait([
-    profileFuture,
-    feedFuture,
-    followersFuture,
-    followingFuture,
-    bodyFuture,
-    foodFuture,
-  ]);
-
-  return MyPageData.fromSnapshots(
+  return MyPageData.fromData(
     uid: user.uid,
     email: user.email,
-    profile: results[0] as DocumentSnapshot<Map<String, dynamic>>,
-    posts: results[1] as QuerySnapshot<Map<String, dynamic>>,
-    followers: results[2] as AggregateQuerySnapshot,
-    following: results[3] as AggregateQuerySnapshot,
-    bodyPhotos: results[4] as QuerySnapshot<Map<String, dynamic>>,
-    foodPhotos: results[5] as QuerySnapshot<Map<String, dynamic>>,
+    profile: profile,
+    posts: posts,
+    followerCount: followers,
+    followingCount: following,
+    albumItems: albumItems,
   );
 });
 
@@ -95,8 +71,18 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
       return const NotificationSettings();
     }
 
-    final doc = await ref
-        .watch(firebaseFirestoreProvider)
+    final firestore = ref.watch(firebaseFirestoreProvider);
+    final profile = await firestore.doc('users/${user.uid}').get();
+    final settings = profile.data()?['settings'];
+    if (settings is Map<String, dynamic>) {
+      final notification = settings['notification'];
+      if (notification is Map<String, dynamic>) {
+        return NotificationSettings.fromJson(notification);
+      }
+    }
+
+    // 기존 세션에서 저장된 하위 문서도 읽어 앱 업데이트 전 데이터를 유지합니다.
+    final doc = await firestore
         .doc('users/${user.uid}/settings/notification')
         .get();
     return NotificationSettings.fromJson(doc.data());
@@ -108,10 +94,18 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
     if (user == null) {
       return;
     }
-    await ref
-        .read(firebaseFirestoreProvider)
-        .doc('users/${user.uid}/settings/notification')
-        .set(settings.toJson(), SetOptions(merge: true));
+    final firestore = ref.read(firebaseFirestoreProvider);
+    final batch = firestore.batch();
+    final profileRef = firestore.doc('users/${user.uid}');
+    final settingsRef = firestore.doc(
+      'users/${user.uid}/settings/notification',
+    );
+    batch.set(settingsRef, settings.toJson(), SetOptions(merge: true));
+    batch.set(profileRef, {
+      'settings': {'notification': settings.toPlainJson()},
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await batch.commit();
   }
 }
 
@@ -120,6 +114,7 @@ class MyPageData {
     required this.uid,
     required this.nickname,
     required this.email,
+    required this.profileImage,
     required this.profileIcon,
     required this.backgroundIcon,
     required this.bio,
@@ -135,6 +130,7 @@ class MyPageData {
       uid: '',
       nickname: '미담러',
       email: null,
+      profileImage: null,
       profileIcon: 'leaf',
       backgroundIcon: 'green',
       bio: '',
@@ -146,47 +142,38 @@ class MyPageData {
     );
   }
 
-  factory MyPageData.fromSnapshots({
+  factory MyPageData.fromData({
     required String uid,
     required String? email,
     required DocumentSnapshot<Map<String, dynamic>> profile,
-    required QuerySnapshot<Map<String, dynamic>> posts,
-    required AggregateQuerySnapshot followers,
-    required AggregateQuerySnapshot following,
-    required QuerySnapshot<Map<String, dynamic>> bodyPhotos,
-    required QuerySnapshot<Map<String, dynamic>> foodPhotos,
+    required List<PostModel> posts,
+    required int followerCount,
+    required int followingCount,
+    required List<AlbumItem> albumItems,
   }) {
     final data = profile.data();
-    final feed = posts.docs
-        .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))
-        .toList();
-    final album = [
-      ...bodyPhotos.docs.map(
-        (doc) => AlbumItem.fromJson(type: '눈바디', data: doc.data()),
-      ),
-      ...foodPhotos.docs.map(
-        (doc) => AlbumItem.fromJson(type: '식단', data: doc.data()),
-      ),
-    ]..sort((a, b) => b.date.compareTo(a.date));
 
     return MyPageData(
       uid: uid,
       nickname: data?['nickname'] as String? ?? '미담러',
       email: email,
+      profileImage:
+          data?['profileImage'] as String? ?? data?['photoURL'] as String?,
       profileIcon: data?['profileIcon'] as String? ?? 'leaf',
       backgroundIcon: data?['backgroundIcon'] as String? ?? 'green',
       bio: data?['bio'] as String? ?? '',
-      feedCount: feed.length,
-      followerCount: followers.count ?? 0,
-      followingCount: following.count ?? 0,
-      posts: feed,
-      albumItems: album,
+      feedCount: posts.length,
+      followerCount: followerCount,
+      followingCount: followingCount,
+      posts: posts,
+      albumItems: albumItems,
     );
   }
 
   final String uid;
   final String nickname;
   final String? email;
+  final String? profileImage;
   final String profileIcon;
   final String backgroundIcon;
   final String bio;
@@ -301,6 +288,18 @@ class NotificationSettings {
     };
   }
 
+  Map<String, Object?> toPlainJson() {
+    return {
+      'enabled': enabled,
+      'vibration': vibration,
+      'sound': sound,
+      'comment': comment,
+      'like': like,
+      'follow': follow,
+      'chat': chat,
+    };
+  }
+
   NotificationSettings copyWith({
     bool? enabled,
     bool? vibration,
@@ -319,5 +318,153 @@ class NotificationSettings {
       follow: follow ?? this.follow,
       chat: chat ?? this.chat,
     );
+  }
+}
+
+Future<DocumentSnapshot<Map<String, dynamic>>> _readUserProfile(
+  FirebaseFirestore firestore,
+  String uid,
+) {
+  return firestore.doc('users/$uid').get();
+}
+
+Future<List<PostModel>> _readUserPosts(
+  FirebaseFirestore firestore,
+  String uid,
+) async {
+  try {
+    final snapshot = await firestore
+        .collection('posts')
+        .where('uid', isEqualTo: uid)
+        .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(30)
+        .get();
+    return snapshot.docs
+        .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))
+        .toList();
+  } on FirebaseException {
+    // 복합 인덱스가 아직 없는 개발 환경에서도 마이페이지가 멈추지 않게 합니다.
+    final snapshot = await firestore
+        .collection('posts')
+        .where('uid', isEqualTo: uid)
+        .limit(30)
+        .get();
+    final posts = snapshot.docs
+        .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))
+        .where((post) => !post.isDeleted)
+        .toList();
+    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return posts;
+  }
+}
+
+Future<int> _readCount(
+  CollectionReference<Map<String, dynamic>> collection, {
+  required int fallback,
+}) async {
+  try {
+    final snapshot = await collection.count().get();
+    return snapshot.count ?? fallback;
+  } on FirebaseException {
+    return fallback;
+  }
+}
+
+Future<List<AlbumItem>> _readAlbumItems(
+  FirebaseFirestore firestore,
+  String uid,
+) async {
+  final bodyItems = await _readBodyPhotos(firestore, uid);
+  final foodItems = await _readFoodPhotos(firestore, uid);
+  final items = [
+    ...bodyItems,
+    ...foodItems,
+  ].where((item) => item.imageUrl.trim().isNotEmpty).toList();
+  items.sort((a, b) => b.date.compareTo(a.date));
+  return items.take(80).toList();
+}
+
+Future<List<AlbumItem>> _readBodyPhotos(
+  FirebaseFirestore firestore,
+  String uid,
+) async {
+  final items = <AlbumItem>[];
+  final queries = [
+    firestore
+        .collection('body_photos/$uid/photos')
+        .orderBy('date', descending: true)
+        .limit(60)
+        .get(),
+    firestore
+        .collection('users/$uid/body_photos')
+        .orderBy('date', descending: true)
+        .limit(60)
+        .get(),
+  ];
+
+  for (final query in queries) {
+    try {
+      final snapshot = await query;
+      items.addAll(
+        snapshot.docs.map(
+          (doc) => AlbumItem.fromJson(type: '눈바디', data: doc.data()),
+        ),
+      );
+    } on FirebaseException {
+      // 경로가 아직 비어 있거나 권한/인덱스가 준비되지 않아도 나머지 앨범은 표시합니다.
+    }
+  }
+  return items;
+}
+
+Future<List<AlbumItem>> _readFoodPhotos(
+  FirebaseFirestore firestore,
+  String uid,
+) async {
+  final items = <AlbumItem>[];
+  QuerySnapshot<Map<String, dynamic>> days;
+  try {
+    days = await firestore
+        .collection('food_logs/$uid/daily')
+        .orderBy('updatedAt', descending: true)
+        .limit(35)
+        .get();
+  } on FirebaseException {
+    days = await firestore.collection('food_logs/$uid/daily').limit(35).get();
+  }
+
+  for (final day in days.docs) {
+    try {
+      final meals = await day.reference
+          .collection('meals')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      items.addAll(
+        meals.docs.map((doc) {
+          final data = doc.data();
+          return AlbumItem.fromJson(
+            type: '식단',
+            data: {
+              ...data,
+              'date':
+                  data['date'] ?? data['createdAt'] ?? _dateFromDayId(day.id),
+            },
+          );
+        }),
+      );
+    } on FirebaseException {
+      // 한 날짜의 식단 읽기에 실패해도 다른 날짜 사진은 계속 보여줍니다.
+    }
+  }
+  return items;
+}
+
+DateTime _dateFromDayId(String dayId) {
+  try {
+    return DateFormat('yyyy-MM-dd').parse(dayId);
+  } on FormatException {
+    return DateTime.now();
   }
 }

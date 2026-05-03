@@ -93,7 +93,11 @@ class _ProfileHeader extends ConsumerWidget {
               children: [
                 GestureDetector(
                   onTap: () => _showAvatarPicker(context, ref),
-                  child: PresetAvatar(icon: data.profileIcon, size: 86),
+                  child: PresetAvatar(
+                    icon: data.profileIcon,
+                    imageUrl: data.profileImage,
+                    size: 86,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -147,6 +151,7 @@ class _ProfileHeader extends ConsumerWidget {
         onSelected: (value) async {
           await ref.read(firebaseFirestoreProvider).doc('users/$uid').set({
             'profileIcon': value,
+            'profileImage': FieldValue.delete(),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
           ref.invalidate(myPageDataProvider);
@@ -319,7 +324,7 @@ class _FeedGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (posts.isEmpty) {
-      return const Center(child: Text('아직 작성한 피드가 없어요.'));
+      return const Center(child: Text('아직 게시글이 없어요'));
     }
     return GridView.builder(
       padding: const EdgeInsets.all(16),
@@ -360,7 +365,7 @@ class _AlbumGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('아직 앨범 사진이 없어요.'));
+      return const Center(child: Text('아직 사진이 없어요'));
     }
     return GridView.builder(
       padding: const EdgeInsets.all(16),

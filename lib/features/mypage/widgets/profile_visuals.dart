@@ -49,29 +49,46 @@ LinearGradient profileBackgroundGradient(String value) {
 }
 
 class PresetAvatar extends StatelessWidget {
-  const PresetAvatar({required this.icon, this.size = 76, super.key});
+  const PresetAvatar({
+    required this.icon,
+    this.imageUrl,
+    this.size = 76,
+    super.key,
+  });
 
   final String icon;
+  final String? imageUrl;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedImageUrl = imageUrl?.trim();
+    final hasImage = resolvedImageUrl != null && resolvedImageUrl.isNotEmpty;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer,
         shape: BoxShape.circle,
+        image: hasImage
+            ? DecorationImage(
+                image: NetworkImage(resolvedImageUrl),
+                fit: BoxFit.cover,
+              )
+            : null,
         border: Border.all(
           color: Theme.of(context).scaffoldBackgroundColor,
           width: 4,
         ),
       ),
-      child: Icon(
-        profileIconData(icon),
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
-        size: size * 0.42,
-      ),
+      child: hasImage
+          ? null
+          : Icon(
+              profileIconData(icon),
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              size: size * 0.42,
+            ),
     );
   }
 }
