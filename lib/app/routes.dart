@@ -21,6 +21,7 @@ import '../features/home/screens/daily_detail_screen.dart';
 import '../features/home/screens/exercise_add_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/widgets/main_scaffold.dart';
+import '../features/mypage/screens/app_settings_screen.dart';
 import '../features/mypage/screens/mypage_screen.dart';
 import '../features/mypage/screens/notification_settings_screen.dart';
 import '../features/mypage/screens/profile_screen.dart';
@@ -200,6 +201,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
+        name: MedamRouteName.appSettings,
+        path: '/app-settings',
+        builder: (context, state) => const AppSettingsScreen(),
+      ),
+      GoRoute(
         path: '/notification-settings',
         builder: (context, state) => const NotificationSettingsScreen(),
       ),
@@ -290,6 +296,7 @@ class MedamRouteName {
   static const camera = 'camera';
   static const community = 'community';
   static const mypage = 'mypage';
+  static const appSettings = 'app_settings';
   static const settings = 'settings';
   static const calendar = 'calendar';
   static const notification = 'notification';
