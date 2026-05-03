@@ -47,13 +47,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                   calendarFormat: CalendarFormat.month,
                   availableCalendarFormats: const {CalendarFormat.month: '월'},
-                  rowHeight: _calendarRowHeight(context),
-                  daysOfWeekHeight: 34,
+                  shouldFillViewport: true,
+                  daysOfWeekHeight: 22,
                   headerStyle: const HeaderStyle(
                     titleCentered: true,
                     formatButtonVisible: false,
+                    headerPadding: EdgeInsets.symmetric(vertical: 2),
+                    leftChevronPadding: EdgeInsets.zero,
+                    rightChevronPadding: EdgeInsets.zero,
                   ),
                   calendarStyle: CalendarStyle(
+                    cellMargin: const EdgeInsets.all(1),
+                    cellPadding: EdgeInsets.zero,
+                    markerMargin: EdgeInsets.zero,
                     todayDecoration: BoxDecoration(
                       color: Theme.of(
                         context,
@@ -83,7 +89,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         return null;
                       }
                       return Positioned(
-                        bottom: 8,
+                        bottom: 4,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -95,7 +101,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             if (hasMemo)
                               Icon(
                                 Icons.edit_note_rounded,
-                                size: 14,
+                                size: 12,
                                 color: Theme.of(context).colorScheme.secondary,
                               ),
                           ],
@@ -108,17 +114,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 error: (error, _) => Center(child: Text(error.toString())),
               ),
             ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: selectedDay == null
-                  ? const SizedBox.shrink()
-                  : _CalendarActions(
-                      selectedDay: selectedDay,
-                      onMemo: () => _showMemoSheet(selectedDay),
-                      onMove: () => context.push(
-                        '/daily-detail?date=${_dateKey(selectedDay)}',
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: selectedDay == null
+                    ? const SizedBox(height: 48)
+                    : _CalendarActions(
+                        selectedDay: selectedDay,
+                        onMemo: () => _showMemoSheet(selectedDay),
+                        onMove: () => context.push(
+                          '/daily-detail?date=${_dateKey(selectedDay)}',
+                        ),
                       ),
-                    ),
+              ),
             ),
           ],
         ),
@@ -217,17 +226,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
   }
 
-  double _calendarRowHeight(BuildContext context) {
-    final height = MediaQuery.sizeOf(context).height;
-    if (height >= 1000) {
-      return 104;
-    }
-    if (height >= 820) {
-      return 82;
-    }
-    return 62;
-  }
-
   String _dateKey(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
 }
 
@@ -244,19 +242,9 @@ class _CalendarActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       key: ValueKey(selectedDay),
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      height: 48,
       child: Row(
         children: [
           Expanded(
@@ -266,7 +254,7 @@ class _CalendarActions extends StatelessWidget {
               label: const Text('메모하기'),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: FilledButton.icon(
               onPressed: onMove,
