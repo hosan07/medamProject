@@ -17,8 +17,20 @@ class CameraCaptureService {
 
   final ImagePicker _picker;
 
+  Future<PermissionStatus> cameraPermissionStatus() {
+    return Permission.camera.status;
+  }
+
+  Future<PermissionStatus> requestCameraPermission() {
+    return Permission.camera.request();
+  }
+
+  Future<bool> openCameraSettings() {
+    return openAppSettings();
+  }
+
   Future<File?> capturePhoto() async {
-    final permission = await Permission.camera.request();
+    final permission = await cameraPermissionStatus();
     if (!permission.isGranted) {
       return null;
     }

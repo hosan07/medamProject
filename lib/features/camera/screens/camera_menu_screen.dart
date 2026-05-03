@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../data/repositories/food_repository.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -31,6 +32,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
   _CameraMode _mode = _CameraMode.body;
   File? _image;
   FoodData? _foodResult;
+  PermissionStatus? _permissionStatus;
   bool _openingCamera = false;
   bool _analyzing = false;
   bool _saving = false;
@@ -40,7 +42,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
   void initState() {
     super.initState();
     _foodNameController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _capture());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkPermission());
   }
 
   @override
@@ -49,8 +51,72 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     super.dispose();
   }
 
+  Future<void> _checkPermission() async {
+    final status = await ref
+        .read(cameraCaptureProvider)
+        .cameraPermissionStatus();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _permissionStatus = status);
+    if (status.isGranted) {
+      await _capture();
+    }
+  }
+
+  Future<void> _requestPermission() async {
+    final service = ref.read(cameraCaptureProvider);
+    final current = await service.cameraPermissionStatus();
+
+    if (current.isPermanentlyDenied || current.isRestricted) {
+      await service.openCameraSettings();
+      if (!mounted) {
+        return;
+      }
+      setState(() => _permissionStatus = current);
+      return;
+    }
+
+    final next = await service.requestCameraPermission();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _permissionStatus = next);
+    if (next.isGranted) {
+      await _capture();
+    }
+  }
+
+  Future<void> _openSettings() async {
+    await ref.read(cameraCaptureProvider).openCameraSettings();
+    if (mounted) {
+      await _checkPermission();
+    }
+  }
+
   Future<void> _capture() async {
     if (_openingCamera || _saving) {
+      return;
+    }
+
+    final status = await ref
+        .read(cameraCaptureProvider)
+        .cameraPermissionStatus();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _permissionStatus = status);
+    if (status.isDenied || status.isLimited) {
+      await _requestPermission();
+      return;
+    }
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      return;
+    }
+    if (!status.isGranted) {
       return;
     }
 
@@ -71,9 +137,9 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     });
 
     if (image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('카메라 권한이 필요하거나 촬영이 취소되었어요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('촬영이 취소되었어요.')));
       return;
     }
 
@@ -186,7 +252,9 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
       _foodResult = null;
       _analyzing = false;
     });
-    _capture();
+    if (_permissionStatus?.isGranted ?? false) {
+      _capture();
+    }
   }
 
   @override
@@ -219,6 +287,29 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final permission = _permissionStatus;
+    if (permission == null) {
+      return const _CameraStatus(message: '카메라 권한을 확인하고 있어요...');
+    }
+    if (permission.isDenied || permission.isLimited) {
+      return _PermissionGuide(
+        title: '카메라 권한이 필요해요',
+        description: '음식과 눈바디 사진을 촬영하려면 카메라 권한을 허용해 주세요.',
+        buttonLabel: '권한 허용하기',
+        icon: Icons.camera_alt_rounded,
+        onPressed: _requestPermission,
+      );
+    }
+    if (permission.isPermanentlyDenied || permission.isRestricted) {
+      return _PermissionGuide(
+        title: '설정에서 허용해주세요',
+        description: '카메라 권한이 차단되어 있어요. 설정 앱에서 미담의 카메라 접근을 켜주세요.',
+        buttonLabel: '설정으로 이동',
+        icon: Icons.settings_rounded,
+        onPressed: _openSettings,
+      );
+    }
+
     if (_openingCamera) {
       return const _CameraStatus(message: '카메라를 여는 중이에요...');
     }
@@ -250,6 +341,64 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
               onSave: _saveFood,
               onRetake: _capture,
             ),
+    );
+  }
+}
+
+class _PermissionGuide extends StatelessWidget {
+  const _PermissionGuide({
+    required this.title,
+    required this.description,
+    required this.buttonLabel,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String description;
+  final String buttonLabel;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 44),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white70,
+                height: 1.45,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: Text(buttonLabel),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
