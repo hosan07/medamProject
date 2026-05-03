@@ -17,6 +17,7 @@ import '../features/community/screens/chat_room_screen.dart';
 import '../features/community/screens/community_screen.dart';
 import '../features/community/screens/post_detail_screen.dart';
 import '../features/community/screens/post_write_screen.dart';
+import '../features/home/screens/calendar_screen.dart';
 import '../features/home/screens/daily_detail_screen.dart';
 import '../features/home/screens/exercise_add_screen.dart';
 import '../features/home/screens/home_screen.dart';
@@ -241,7 +242,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         name: MedamRouteName.calendar,
         path: '/calendar',
-        builder: (context, state) => const MedamRouteScreen(title: '캘린더'),
+        builder: (context, state) => const CalendarScreen(),
       ),
       GoRoute(
         name: MedamRouteName.notification,
@@ -258,7 +259,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/daily-detail',
-        builder: (context, state) => const DailyDetailScreen(),
+        builder: (context, state) {
+          final date = state.uri.queryParameters['date'];
+          return DailyDetailScreen(dateKey: date ?? _todayKey());
+        },
       ),
       GoRoute(
         path: '/body-album',
@@ -301,6 +305,12 @@ class MedamRouteName {
   static const calendar = 'calendar';
   static const notification = 'notification';
   static const profile = 'profile';
+}
+
+String _todayKey() {
+  final now = DateTime.now();
+  String twoDigits(int value) => value.toString().padLeft(2, '0');
+  return '${now.year}-${twoDigits(now.month)}-${twoDigits(now.day)}';
 }
 
 class MedamRouteScreen extends StatelessWidget {
