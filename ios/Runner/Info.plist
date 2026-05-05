@@ -22,6 +22,17 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.144719086854-gfdap8r5rd618djv8bks4nh9o61menpm</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
@@ -29,11 +40,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>음식과 눈바디 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.</string>
+	<string>음식 사진 촬영 및 눈바디 기록을 위해 카메라 접근이 필요합니다</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>촬영한 사진을 앨범에 저장하기 위해 사진 추가 권한이 필요합니다.</string>
+	<string>촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>기록할 사진을 선택하기 위해 사진 보관함 접근 권한이 필요합니다.</string>
+	<string>촬영한 사진을 앨범에 저장하기 위해 사진 접근이 필요합니다</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

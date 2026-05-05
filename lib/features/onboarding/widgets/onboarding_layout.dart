@@ -42,17 +42,18 @@ class OnboardingLayout extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       subtitle!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -66,19 +67,25 @@ class OnboardingLayout extends StatelessWidget {
                     children: [
                       if (step > 1) ...[
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: () =>
-                                context.go('/onboarding/${step - 1}'),
-                            child: const Text('이전'),
+                          child: SizedBox(
+                            height: 52,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  context.go('/onboarding/${step - 1}'),
+                              child: const Text('이전'),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
                       ],
                       Expanded(
                         flex: step > 1 ? 2 : 1,
-                        child: FilledButton(
-                          onPressed: primaryEnabled ? onPrimary : null,
-                          child: Text(primaryLabel),
+                        child: SizedBox(
+                          height: 52,
+                          child: FilledButton(
+                            onPressed: primaryEnabled ? onPrimary : null,
+                            child: Text(primaryLabel),
+                          ),
                         ),
                       ),
                     ],
@@ -108,9 +115,9 @@ class _ProgressHeader extends StatelessWidget {
         Text(
           'step $step of $onboardingTotalSteps',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.w900,
-          ),
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w900,
+              ),
         ),
         const SizedBox(height: 10),
         ClipRRect(
@@ -174,17 +181,17 @@ class OnboardingOptionCard extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       subtitle!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ],
@@ -274,8 +281,8 @@ class NumberPickerField extends StatelessWidget {
                   '${_format(value)}$suffix',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
               ),
               IconButton.filledTonal(

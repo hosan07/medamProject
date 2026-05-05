@@ -164,18 +164,24 @@ class _PreviewPanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: saving ? null : onCapture,
-                  icon: const Icon(Icons.camera_alt_rounded),
-                  label: const Text('다시 찍기'),
+                child: SizedBox(
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: saving ? null : onCapture,
+                    icon: const Icon(Icons.camera_alt_rounded),
+                    label: const Text('다시 찍기'),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: FilledButton.icon(
-                  onPressed: file == null || saving ? null : onSave,
-                  icon: const Icon(Icons.save_rounded),
-                  label: Text(saving ? '저장 중...' : '저장하기'),
+                child: SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: file == null || saving ? null : onSave,
+                    icon: const Icon(Icons.save_rounded),
+                    label: Text(saving ? '저장 중...' : '저장하기'),
+                  ),
                 ),
               ),
             ],

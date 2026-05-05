@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ads/ad_manager.dart';
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../mypage/providers/monetization_provider.dart';
 import '../../notification/providers/notification_provider.dart';
@@ -54,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: homeData.when(
         data: (data) => _HomeBody(data: data, showAds: showAds),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const MedamListPlaceholder(itemCount: 3),
         error: (error, stackTrace) =>
             _HomeBody(data: TodayHomeData.empty(), showAds: showAds),
       ),
@@ -372,6 +373,7 @@ class _MealAddSection extends StatelessWidget {
 
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,

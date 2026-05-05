@@ -44,8 +44,8 @@ class LoginScreen extends ConsumerWidget {
                     '찍어서 담는 나의 오늘',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                   const Spacer(),
                   _LoginButton(
@@ -86,6 +86,7 @@ class LoginScreen extends ConsumerWidget {
   }) async {
     final agreed = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => const _ConsentBottomSheet(),
@@ -232,9 +233,8 @@ class _ConsentBottomSheetState extends State<_ConsentBottomSheet> {
             ),
           const SizedBox(height: 18),
           FilledButton(
-            onPressed: _allChecked
-                ? () => Navigator.of(context).pop(true)
-                : null,
+            onPressed:
+                _allChecked ? () => Navigator.of(context).pop(true) : null,
             child: const Text('동의하고 계속하기'),
           ),
         ],

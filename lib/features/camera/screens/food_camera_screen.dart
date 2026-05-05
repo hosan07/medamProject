@@ -67,6 +67,7 @@ class _FoodCameraScreenState extends ConsumerState<FoodCameraScreen> {
 
     final mealType = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => const _MealTypeSheet(),
     );
     if (mealType == null || !mounted) {

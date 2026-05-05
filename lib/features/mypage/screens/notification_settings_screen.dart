@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../providers/mypage_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
@@ -67,7 +68,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const MedamListPlaceholder(itemCount: 4),
             error: (error, _) => Center(child: Text(error.toString())),
           ),
         ),

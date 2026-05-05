@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../providers/home_provider.dart';
 import '../providers/record_detail_provider.dart';
 
@@ -57,9 +58,8 @@ class _DailyTab extends ConsumerWidget {
       data: (data) {
         final grouped = {
           for (final mealType in const ['아침', '점심', '저녁', '간식'])
-            mealType: data.meals
-                .where((item) => item.mealType == mealType)
-                .toList(),
+            mealType:
+                data.meals.where((item) => item.mealType == mealType).toList(),
         };
 
         return ListView(
@@ -73,7 +73,7 @@ class _DailyTab extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const MedamListPlaceholder(itemCount: 3),
       error: (error, _) => Center(child: Text(error.toString())),
     );
   }
@@ -104,7 +104,7 @@ class _WeeklyTab extends ConsumerWidget {
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const MedamListPlaceholder(itemCount: 3),
       error: (error, _) => Center(child: Text(error.toString())),
     );
   }
@@ -134,7 +134,7 @@ class _MonthlyTab extends ConsumerWidget {
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const MedamListPlaceholder(itemCount: 3),
       error: (error, _) => Center(child: Text(error.toString())),
     );
   }
@@ -280,8 +280,8 @@ class _MealGroup extends StatelessWidget {
                   child: Text(
                     mealType,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                 ),
                 Text(

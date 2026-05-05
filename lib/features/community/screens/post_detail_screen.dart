@@ -176,6 +176,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   void _showPostMenu(PostModel post) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Column(

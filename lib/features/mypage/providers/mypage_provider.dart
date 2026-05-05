@@ -8,6 +8,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 
 final myPageDataProvider = FutureProvider<MyPageData>((ref) async {
+  ref.keepAlive();
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return MyPageData.empty();
@@ -41,6 +42,7 @@ final otherProfileProvider = FutureProvider.family<PublicProfileData, String>((
   ref,
   uid,
 ) async {
+  ref.keepAlive();
   final firestore = ref.watch(firebaseFirestoreProvider);
   final profileFuture = firestore.doc('users/$uid').get();
   final feedFuture = firestore
@@ -67,6 +69,7 @@ final notificationSettingsProvider =
 class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
   @override
   Future<NotificationSettings> build() async {
+    ref.keepAlive();
     final user = ref.watch(currentUserProvider);
     if (user == null) {
       return const NotificationSettings();
@@ -367,7 +370,7 @@ Future<List<PostModel>> _readUserPosts(
         .where('uid', isEqualTo: uid)
         .where('isDeleted', isEqualTo: false)
         .orderBy('createdAt', descending: true)
-        .limit(30)
+        .limit(12)
         .get();
     return snapshot.docs
         .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))
@@ -377,7 +380,7 @@ Future<List<PostModel>> _readUserPosts(
     final snapshot = await firestore
         .collection('posts')
         .where('uid', isEqualTo: uid)
-        .limit(30)
+        .limit(12)
         .get();
     final posts = snapshot.docs
         .map((doc) => PostModel.fromJson({'id': doc.id, ...doc.data()}))

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../../data/repositories/community_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/mypage_provider.dart';
@@ -33,8 +34,8 @@ class ProfileScreen extends ConsumerWidget {
                   data.nickname,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -72,8 +73,8 @@ class ProfileScreen extends ConsumerWidget {
                 Text(
                   '공개 피드',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
                 const SizedBox(height: 12),
                 if (data.isPrivate)
@@ -86,10 +87,10 @@ class ProfileScreen extends ConsumerWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
                     itemCount: data.posts.length,
                     itemBuilder: (context, index) {
                       final post = data.posts[index];
@@ -116,7 +117,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const MedamListPlaceholder(itemCount: 3),
         error: (error, _) => Center(child: Text(error.toString())),
       ),
     );

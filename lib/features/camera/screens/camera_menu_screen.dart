@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/widgets/medam_confirm_dialog.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../home/providers/home_provider.dart';
@@ -52,9 +53,8 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
   }
 
   Future<void> _checkPermission() async {
-    final status = await ref
-        .read(cameraCaptureProvider)
-        .cameraPermissionStatus();
+    final status =
+        await ref.read(cameraCaptureProvider).cameraPermissionStatus();
     if (!mounted) {
       return;
     }
@@ -62,6 +62,8 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     setState(() => _permissionStatus = status);
     if (status.isGranted) {
       await _capture();
+    } else if (status.isPermanentlyDenied || status.isRestricted) {
+      _showCameraSettingsDialog();
     }
   }
 
@@ -70,7 +72,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     final current = await service.cameraPermissionStatus();
 
     if (current.isPermanentlyDenied || current.isRestricted) {
-      await service.openCameraSettings();
+      _showCameraSettingsDialog();
       if (!mounted) {
         return;
       }
@@ -86,6 +88,8 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     setState(() => _permissionStatus = next);
     if (next.isGranted) {
       await _capture();
+    } else if (next.isPermanentlyDenied || next.isRestricted) {
+      _showCameraSettingsDialog();
     }
   }
 
@@ -101,9 +105,8 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
       return;
     }
 
-    final status = await ref
-        .read(cameraCaptureProvider)
-        .cameraPermissionStatus();
+    final status =
+        await ref.read(cameraCaptureProvider).cameraPermissionStatus();
     if (!mounted) {
       return;
     }
@@ -114,6 +117,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
       return;
     }
     if (status.isPermanentlyDenied || status.isRestricted) {
+      _showCameraSettingsDialog();
       return;
     }
     if (!status.isGranted) {
@@ -204,6 +208,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
 
     final mealType = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => const _MealTypeSheet(),
     );
@@ -220,9 +225,7 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
       folder: 'food_photos',
     );
 
-    await ref
-        .read(homeRepositoryProvider)
-        .addMeal(
+    await ref.read(homeRepositoryProvider).addMeal(
           uid: user.uid,
           mealType: mealType,
           foodName: _foodNameController.text.trim().isEmpty
@@ -255,6 +258,21 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
     if (_permissionStatus?.isGranted ?? false) {
       _capture();
     }
+  }
+
+  void _showCameraSettingsDialog() {
+    if (!mounted) {
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (context) => MedamConfirmDialog(
+        title: '카메라 권한이 꺼져 있어요',
+        content: '설정 > 미담 > 카메라를 허용해주세요.',
+        confirmText: '설정으로 이동',
+        onConfirm: _openSettings,
+      ),
+    );
   }
 
   @override
@@ -534,18 +552,24 @@ class _BodyActions extends StatelessWidget {
     return _ActionPanel(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: saving ? null : onRetake,
-            icon: const Icon(Icons.camera_alt_rounded),
-            label: const Text('다시 찍기'),
+          child: SizedBox(
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: saving ? null : onRetake,
+              icon: const Icon(Icons.camera_alt_rounded),
+              label: const Text('다시 찍기'),
+            ),
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: FilledButton.icon(
-            onPressed: saving ? null : onSave,
-            icon: const Icon(Icons.save_rounded),
-            label: Text(saving ? '저장 중...' : '저장하기'),
+          child: SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: saving ? null : onSave,
+              icon: const Icon(Icons.save_rounded),
+              label: Text(saving ? '저장 중...' : '저장하기'),
+            ),
           ),
         ),
       ],
@@ -589,8 +613,8 @@ class _FoodResultActions extends StatelessWidget {
               child: Text(
                 '${data.calories}kcal',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+                      fontWeight: FontWeight.w900,
+                    ),
               ),
             ),
             _MacroChip(label: '탄', value: data.carbs),
@@ -604,18 +628,24 @@ class _FoodResultActions extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: saving ? null : onRetake,
-                icon: const Icon(Icons.camera_alt_rounded),
-                label: const Text('다시 찍기'),
+              child: SizedBox(
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: saving ? null : onRetake,
+                  icon: const Icon(Icons.camera_alt_rounded),
+                  label: const Text('다시 찍기'),
+                ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: FilledButton.icon(
-                onPressed: saving ? null : onSave,
-                icon: const Icon(Icons.check_rounded),
-                label: Text(saving ? '저장 중...' : '기록 추가'),
+              child: SizedBox(
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: saving ? null : onSave,
+                  icon: const Icon(Icons.check_rounded),
+                  label: Text(saving ? '저장 중...' : '기록 추가'),
+                ),
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/community_provider.dart';
 import '../widgets/post_card.dart';
@@ -16,9 +17,9 @@ class CommunityScreen extends ConsumerWidget {
     final uid = ref.watch(currentUserProvider)?.uid;
     final unreadCount =
         ref.watch(chatRoomsProvider).value?.fold<int>(0, (total, room) {
-          return total + (uid == null ? 0 : room.unreadCount[uid] ?? 0);
-        }) ??
-        0;
+              return total + (uid == null ? 0 : room.unreadCount[uid] ?? 0);
+            }) ??
+            0;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,23 +77,41 @@ class CommunityScreen extends ConsumerWidget {
                         return RefreshIndicator(
                           onRefresh: () async =>
                               ref.invalidate(communityPostsProvider),
-                          child: GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(18, 12, 18, 120),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: isTablet ? 2 : 1,
-                                  mainAxisSpacing: 14,
-                                  crossAxisSpacing: 14,
-                                  mainAxisExtent: isTablet ? 390 : 370,
+                          child: isTablet
+                              ? GridView.builder(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    18,
+                                    12,
+                                    18,
+                                    120,
+                                  ),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 14,
+                                    crossAxisSpacing: 14,
+                                    childAspectRatio: 1.85,
+                                  ),
+                                  itemCount: items.length,
+                                  itemBuilder: (context, index) =>
+                                      PostCard(post: items[index]),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    18,
+                                    12,
+                                    18,
+                                    120,
+                                  ),
+                                  itemBuilder: (context, index) =>
+                                      PostCard(post: items[index]),
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 14),
+                                  itemCount: items.length,
                                 ),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) =>
-                                PostCard(post: items[index]),
-                          ),
                         );
                       },
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
+                      loading: () => const MedamListPlaceholder(),
                       error: (error, _) => _CommunityError(
                         message: error.toString(),
                         onRetry: () => ref.invalidate(communityPostsProvider),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -94,8 +95,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                       itemCount: items.length,
                     );
                   },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                  loading: () => const MedamListPlaceholder(itemCount: 5),
                   error: (error, _) => Center(child: Text(error.toString())),
                 ),
               ),
@@ -144,6 +144,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   void _showNotice(NotificationModel notification) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Padding(

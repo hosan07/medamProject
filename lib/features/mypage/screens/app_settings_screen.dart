@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/widgets/medam_confirm_dialog.dart';
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/mypage_provider.dart';
@@ -138,7 +140,7 @@ class AppSettingsScreen extends ConsumerWidget {
             );
           },
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const MedamListPlaceholder(itemCount: 4),
         error: (error, _) => Center(child: Text(error.toString())),
       ),
     );
@@ -147,6 +149,7 @@ class AppSettingsScreen extends ConsumerWidget {
   void _showPrivacySheet(BuildContext context, WidgetRef ref, MyPageData data) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: Padding(
@@ -186,6 +189,7 @@ class AppSettingsScreen extends ConsumerWidget {
   void _showWidgetGuide(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => const SafeArea(
         child: Padding(
@@ -197,27 +201,20 @@ class AppSettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('현재 계정에서 로그아웃할까요?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('로그아웃'),
-          ),
-        ],
+      builder: (dialogContext) => MedamConfirmDialog(
+        title: '로그아웃',
+        content: '현재 계정에서 로그아웃할까요?',
+        confirmText: '로그아웃',
+        onConfirm: () async {
+          await ref.read(authProvider.notifier).signOut();
+          if (context.mounted) {
+            context.go('/login');
+          }
+        },
       ),
     );
-    if (confirmed == true) {
-      await ref.read(authProvider.notifier).signOut();
-      if (context.mounted) context.go('/login');
-    }
   }
 }
 

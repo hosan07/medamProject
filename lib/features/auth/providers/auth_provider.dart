@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../data/repositories/auth_repository.dart';
 
@@ -47,9 +48,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
   Future<void> signInWithGoogle() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final credential = await ref
-          .read(authRepositoryProvider)
-          .signInWithGoogle();
+      final credential =
+          await ref.read(authRepositoryProvider).signInWithGoogle();
+      await _prefetchAfterSignIn(credential.user);
       return credential.user;
     });
   }
@@ -57,9 +58,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
   Future<void> signInWithApple() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final credential = await ref
-          .read(authRepositoryProvider)
-          .signInWithApple();
+      final credential =
+          await ref.read(authRepositoryProvider).signInWithApple();
+      await _prefetchAfterSignIn(credential.user);
       return credential.user;
     });
   }
@@ -70,5 +71,28 @@ class AuthNotifier extends AsyncNotifier<User?> {
       await ref.read(authRepositoryProvider).signOut();
       return null;
     });
+  }
+
+  Future<void> _prefetchAfterSignIn(User? user) async {
+    if (user == null) {
+      return;
+    }
+
+    final firestore = ref.read(firebaseFirestoreProvider);
+    final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    try {
+      await Future.wait([
+        firestore.doc('users/${user.uid}').get(),
+        firestore.doc('food_logs/${user.uid}/daily/$todayKey').get(),
+        firestore
+            .collection('notifications/${user.uid}/items')
+            .where('isRead', isEqualTo: false)
+            .limit(1)
+            .get(),
+      ]);
+    } on Object {
+      // Prefetch는 UX 개선용이라 실패해도 로그인 흐름은 막지 않습니다.
+    }
   }
 }

@@ -14,6 +14,7 @@ final dailyRecordProvider = FutureProvider.family<DailyRecordData, String>((
   ref,
   dateKey,
 ) async {
+  ref.keepAlive();
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return DailyRecordData.empty(dateKey);
@@ -25,6 +26,7 @@ final weeklyRecordProvider = FutureProvider.family<WeeklyRecordData, String>((
   ref,
   dateKey,
 ) async {
+  ref.keepAlive();
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return const WeeklyRecordData(days: []);
@@ -36,6 +38,7 @@ final monthlyRecordProvider = FutureProvider.family<MonthlyRecordData, String>((
   ref,
   dateKey,
 ) async {
+  ref.keepAlive();
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return const MonthlyRecordData(days: []);
@@ -49,6 +52,7 @@ final calendarMonthProvider = FutureProvider.family<CalendarMonthData, String>((
   ref,
   monthKey,
 ) async {
+  ref.keepAlive();
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return const CalendarMonthData(recordDates: {}, memoDates: {});
@@ -60,22 +64,20 @@ final calendarMonthProvider = FutureProvider.family<CalendarMonthData, String>((
 
 class RecordRepository {
   const RecordRepository({required FirebaseFirestore firestore})
-    : _firestore = firestore;
+      : _firestore = firestore;
 
   final FirebaseFirestore _firestore;
 
   Future<DailyRecordData> getDailyRecord(String uid, String dateKey) async {
     final userDoc = await _firestore.doc('users/$uid').get();
-    final dailyDoc = await _firestore
-        .doc('food_logs/$uid/daily/$dateKey')
-        .get();
+    final dailyDoc =
+        await _firestore.doc('food_logs/$uid/daily/$dateKey').get();
     final mealsSnapshot = await _firestore
         .collection('food_logs/$uid/daily/$dateKey/meals')
         .orderBy('createdAt', descending: false)
         .get();
-    final exerciseDoc = await _firestore
-        .doc('exercise_logs/$uid/daily/$dateKey')
-        .get();
+    final exerciseDoc =
+        await _firestore.doc('exercise_logs/$uid/daily/$dateKey').get();
 
     final meals = mealsSnapshot.docs
         .map((doc) => HomeMealEntry.fromJson({'id': doc.id, ...doc.data()}))
@@ -215,8 +217,7 @@ class DailyRecordData {
     required Map<String, dynamic>? exercise,
   }) {
     final fallback = DailyRecordData.empty(dateKey);
-    final entries =
-        (exercise?['entries'] as List<dynamic>?)
+    final entries = (exercise?['entries'] as List<dynamic>?)
             ?.whereType<Map<dynamic, dynamic>>()
             .map(
               (entry) =>
@@ -230,24 +231,18 @@ class DailyRecordData {
       targetCalories:
           (user?['targetCalories'] as num?)?.toInt() ?? fallback.targetCalories,
       meals: meals,
-      totalCalories:
-          (daily?['consumedCalories'] as num?)?.toInt() ??
+      totalCalories: (daily?['consumedCalories'] as num?)?.toInt() ??
           meals.fold<int>(0, (total, meal) => total + meal.calories),
-      carbs:
-          (daily?['carbs'] as num?)?.toInt() ??
+      carbs: (daily?['carbs'] as num?)?.toInt() ??
           meals.fold<int>(0, (total, meal) => total + meal.carbs),
-      protein:
-          (daily?['protein'] as num?)?.toInt() ??
+      protein: (daily?['protein'] as num?)?.toInt() ??
           meals.fold<int>(0, (total, meal) => total + meal.protein),
-      fat:
-          (daily?['fat'] as num?)?.toInt() ??
+      fat: (daily?['fat'] as num?)?.toInt() ??
           meals.fold<int>(0, (total, meal) => total + meal.fat),
-      waterMl:
-          (daily?['waterMl'] as num?)?.toInt() ??
+      waterMl: (daily?['waterMl'] as num?)?.toInt() ??
           (daily?['waterIntake'] as num?)?.toInt() ??
           0,
-      exerciseMinutes:
-          (exercise?['totalMinutes'] as num?)?.toInt() ??
+      exerciseMinutes: (exercise?['totalMinutes'] as num?)?.toInt() ??
           entries.fold<int>(0, (total, entry) => total + entry.minutes),
       exerciseType: exercise?['latestExerciseType'] as String? ?? '기록 없음',
       exerciseEntries: entries,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/record_detail_provider.dart';
 
@@ -110,7 +111,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     },
                   ),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => LayoutBuilder(
+                  builder: (context, constraints) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: MedamPlaceholder(
+                      height: constraints.maxHeight - 32,
+                      borderRadius: 24,
+                    ),
+                  ),
+                ),
                 error: (error, _) => Center(child: Text(error.toString())),
               ),
             ),
@@ -140,6 +149,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _memoCategory = '식단';
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
@@ -159,8 +169,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   Text(
                     DateFormat('M월 d일 메모').format(day),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
@@ -209,9 +219,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return;
     }
     final dateKey = _dateKey(day);
-    await ref
-        .read(recordRepositoryProvider)
-        .saveMemo(
+    await ref.read(recordRepositoryProvider).saveMemo(
           uid: user.uid,
           dateKey: dateKey,
           category: _memoCategory,
@@ -244,7 +252,7 @@ class _CalendarActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       key: ValueKey(selectedDay),
-      height: 48,
+      height: 52,
       child: Row(
         children: [
           Expanded(

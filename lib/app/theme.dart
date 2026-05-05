@@ -14,6 +14,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   @override
   ThemeMode build() {
+    ref.keepAlive();
     _loadSavedThemeMode();
     return ThemeMode.system;
   }
@@ -87,12 +88,12 @@ class MedamTheme {
       fontFamily: 'Pretendard',
       scaffoldBackgroundColor: background,
       colorScheme: colorScheme,
-      textTheme: Typography.material2021(platform: TargetPlatform.iOS).black
-          .apply(
-            fontFamily: 'Pretendard',
-            bodyColor: foreground,
-            displayColor: foreground,
-          ),
+      textTheme:
+          Typography.material2021(platform: TargetPlatform.iOS).black.apply(
+                fontFamily: 'Pretendard',
+                bodyColor: foreground,
+                displayColor: foreground,
+              ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,

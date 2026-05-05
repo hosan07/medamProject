@@ -50,10 +50,21 @@ dev_dependencies:
   flutter_lints: any
   build_runner: any
   riverpod_generator: any
+  flutter_launcher_icons: ^0.14.1
 
 dependency_overrides:
   image_gallery_saver:
     path: third_party/image_gallery_saver
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#4CAF82"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  remove_alpha_ios: true
+
 flutter:
   uses-material-design: true
+  assets:
+    - assets/

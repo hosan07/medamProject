@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/medam_placeholder.dart';
 import '../../../data/models/post_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -66,7 +67,7 @@ class MyPageScreen extends ConsumerWidget {
             );
           },
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const MedamListPlaceholder(itemCount: 3),
         error: (error, _) => Center(child: Text(error.toString())),
       ),
     );
@@ -110,8 +111,8 @@ class _ProfileHeader extends ConsumerWidget {
                 Text(
                   data.nickname,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
                 if (data.bio.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -151,6 +152,7 @@ class _ProfileHeader extends ConsumerWidget {
     if (uid == null) return;
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => _PresetPicker(
         title: '프로필 아이콘',
@@ -175,6 +177,7 @@ class _ProfileHeader extends ConsumerWidget {
     if (uid == null) return;
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) => _PresetPicker(
         title: '배경 이미지',
@@ -199,6 +202,7 @@ class _ProfileHeader extends ConsumerWidget {
     final bioController = TextEditingController(text: data.bio);
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => Padding(
@@ -228,10 +232,10 @@ class _ProfileHeader extends ConsumerWidget {
                     .read(firebaseFirestoreProvider)
                     .doc('users/${data.uid}')
                     .set({
-                      'nickname': nicknameController.text.trim(),
-                      'bio': bioController.text.trim(),
-                      'updatedAt': FieldValue.serverTimestamp(),
-                    }, SetOptions(merge: true));
+                  'nickname': nicknameController.text.trim(),
+                  'bio': bioController.text.trim(),
+                  'updatedAt': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
                 ref.invalidate(myPageDataProvider);
                 if (context.mounted) Navigator.pop(context);
               },

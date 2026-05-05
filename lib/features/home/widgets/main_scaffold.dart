@@ -18,7 +18,7 @@ class MainScaffold extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: Container(
-              height: 72,
+              height: 68,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
@@ -103,12 +103,13 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: SizedBox(
-          height: 60,
+          height: 52,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: color, size: 22),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
@@ -116,7 +117,8 @@ class _NavItem extends StatelessWidget {
                   maxLines: 1,
                   style: TextStyle(
                     color: color,
-                    fontSize: 11,
+                    fontSize: 10,
+                    height: 1.0,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                   ),
                 ),
@@ -139,7 +141,7 @@ class _CameraNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Transform.translate(
-        offset: const Offset(0, -12),
+        offset: const Offset(0, -10),
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
@@ -147,8 +149,8 @@ class _CameraNavItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
@@ -165,7 +167,7 @@ class _CameraNavItem extends StatelessWidget {
                 child: const Icon(
                   Icons.camera_alt_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 26,
                 ),
               ),
               const SizedBox(height: 2),
@@ -175,7 +177,8 @@ class _CameraNavItem extends StatelessWidget {
                   color: selected
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 11,
+                  fontSize: 10,
+                  height: 1.0,
                   fontWeight: FontWeight.w900,
                 ),
               ),

@@ -165,6 +165,7 @@ class _PersonalSettingsBar extends StatelessWidget {
   void _showPersonalSettingsSheet(BuildContext context, AIChatProfile profile) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       builder: (context) {
         return SafeArea(
@@ -345,16 +346,14 @@ class _MessageBubble extends StatelessWidget {
     final bubbleColor = isUser
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.surface;
-    final textColor = isUser
-        ? Colors.white
-        : Theme.of(context).colorScheme.onSurface;
+    final textColor =
+        isUser ? Colors.white : Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
