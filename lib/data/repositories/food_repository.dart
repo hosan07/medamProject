@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../models/food_analysis_result.dart';
 import '../models/food_log_model.dart';
 import 'auth_repository.dart';
 
@@ -23,8 +24,8 @@ class FoodRepository {
   const FoodRepository({
     required FirebaseFirestore firestore,
     required FirebaseStorage storage,
-  }) : _firestore = firestore,
-       _storage = storage;
+  })  : _firestore = firestore,
+        _storage = storage;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -60,14 +61,17 @@ class FoodRepository {
       'date': Timestamp.fromDate(DateTime(now.year, now.month, now.day)),
       'createdAt': FieldValue.serverTimestamp(),
     });
-    batch.set(dailyRef, {
-      'consumedCalories': FieldValue.increment(foodData.calories),
-      'carbs': FieldValue.increment(foodData.carbs),
-      'protein': FieldValue.increment(foodData.protein),
-      'fat': FieldValue.increment(foodData.fat),
-      'mealCounts.$mealType': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        dailyRef,
+        {
+          'consumedCalories': FieldValue.increment(foodData.calories),
+          'carbs': FieldValue.increment(foodData.carbs),
+          'protein': FieldValue.increment(foodData.protein),
+          'fat': FieldValue.increment(foodData.fat),
+          'mealCounts.$mealType': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
 
     await batch.commit();
   }
@@ -107,14 +111,17 @@ class FoodRepository {
       ...food.copyWith(id: foodRef.id, createdAt: DateTime.now()).toJson(),
       'createdAt': FieldValue.serverTimestamp(),
     });
-    batch.set(dailyRef, {
-      'consumedCalories': FieldValue.increment(food.calories),
-      'carbs': FieldValue.increment(food.carbs),
-      'protein': FieldValue.increment(food.protein),
-      'fat': FieldValue.increment(food.fat),
-      'mealCounts.${food.mealType}': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        dailyRef,
+        {
+          'consumedCalories': FieldValue.increment(food.calories),
+          'carbs': FieldValue.increment(food.carbs),
+          'protein': FieldValue.increment(food.protein),
+          'fat': FieldValue.increment(food.fat),
+          'mealCounts.${food.mealType}': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
   }
 
@@ -134,14 +141,17 @@ class FoodRepository {
     final dailyRef = _firestore.doc('users/$uid/daily_logs/$dateKey');
     final batch = _firestore.batch();
     batch.delete(foodRef);
-    batch.set(dailyRef, {
-      'consumedCalories': FieldValue.increment(-food.calories),
-      'carbs': FieldValue.increment(-food.carbs),
-      'protein': FieldValue.increment(-food.protein),
-      'fat': FieldValue.increment(-food.fat),
-      'mealCounts.${food.mealType}': FieldValue.increment(-1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    batch.set(
+        dailyRef,
+        {
+          'consumedCalories': FieldValue.increment(-food.calories),
+          'carbs': FieldValue.increment(-food.carbs),
+          'protein': FieldValue.increment(-food.protein),
+          'fat': FieldValue.increment(-food.fat),
+          'mealCounts.${food.mealType}': FieldValue.increment(-1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
     await batch.commit();
   }
 
@@ -209,13 +219,26 @@ class FoodData {
     required this.carbs,
     required this.protein,
     required this.fat,
+    this.description = '',
   });
+
+  factory FoodData.fromAnalysisResult(FoodAnalysisResult result) {
+    return FoodData(
+      foodName: result.foodName,
+      calories: result.calories,
+      carbs: result.carbs,
+      protein: result.protein,
+      fat: result.fat,
+      description: result.description,
+    );
+  }
 
   final String foodName;
   final int calories;
   final int carbs;
   final int protein;
   final int fat;
+  final String description;
 
   FoodData copyWith({
     String? foodName,
@@ -223,6 +246,7 @@ class FoodData {
     int? carbs,
     int? protein,
     int? fat,
+    String? description,
   }) {
     return FoodData(
       foodName: foodName ?? this.foodName,
@@ -230,6 +254,7 @@ class FoodData {
       carbs: carbs ?? this.carbs,
       protein: protein ?? this.protein,
       fat: fat ?? this.fat,
+      description: description ?? this.description,
     );
   }
 
@@ -240,6 +265,7 @@ class FoodData {
       'carbs': carbs,
       'protein': protein,
       'fat': fat,
+      'description': description,
     };
   }
 }
@@ -255,8 +281,7 @@ class BodyPhotoEntry {
   factory BodyPhotoEntry.fromJson(Map<String, dynamic> json) {
     return BodyPhotoEntry(
       imageUrl: json['imageUrl'] as String? ?? '',
-      date:
-          (json['date'] as Timestamp?)?.toDate() ??
+      date: (json['date'] as Timestamp?)?.toDate() ??
           (json['createdAt'] as Timestamp?)?.toDate() ??
           DateTime.now(),
       weight: (json['weight'] as num?)?.toDouble(),

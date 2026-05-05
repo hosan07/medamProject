@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/network/openai_service.dart';
 import '../../../core/widgets/medam_confirm_dialog.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -154,15 +155,27 @@ class _CameraMenuScreenState extends ConsumerState<CameraMenuScreen> {
 
   Future<void> _analyzeFood(File image) async {
     setState(() => _analyzing = true);
-    final analyzed = await analyzeFoodMock(image);
-    if (!mounted) {
-      return;
+    try {
+      final analyzed =
+          await ref.read(openAIServiceProvider).analyzeFoodImage(image);
+      if (!mounted) {
+        return;
+      }
+      final result = FoodData.fromAnalysisResult(analyzed);
+      _foodNameController.text = result.foodName;
+      setState(() {
+        _foodResult = result;
+        _analyzing = false;
+      });
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _analyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('음식 분석에 실패했어요. 다시 시도해주세요.')),
+      );
     }
-    _foodNameController.text = analyzed.foodName;
-    setState(() {
-      _foodResult = analyzed;
-      _analyzing = false;
-    });
   }
 
   Future<void> _saveBodyPhoto() async {
@@ -624,6 +637,16 @@ class _FoodResultActions extends StatelessWidget {
             _MacroChip(label: '지', value: data.fat),
           ],
         ),
+        if (data.description.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            data.description,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
         const SizedBox(height: 14),
         Row(
           children: [

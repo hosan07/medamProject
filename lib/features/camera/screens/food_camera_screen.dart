@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/openai_service.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
@@ -46,15 +47,27 @@ class _FoodCameraScreenState extends ConsumerState<FoodCameraScreen> {
       _analyzing = true;
     });
 
-    final analyzed = await analyzeFoodMock(image);
-    if (!mounted) {
-      return;
+    try {
+      final analyzed =
+          await ref.read(openAIServiceProvider).analyzeFoodImage(image);
+      if (!mounted) {
+        return;
+      }
+      final result = FoodData.fromAnalysisResult(analyzed);
+      _foodNameController.text = result.foodName;
+      setState(() {
+        _result = result;
+        _analyzing = false;
+      });
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _analyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('음식 분석에 실패했어요. 다시 시도해주세요.')),
+      );
     }
-    _foodNameController.text = analyzed.foodName;
-    setState(() {
-      _result = analyzed;
-      _analyzing = false;
-    });
   }
 
   Future<void> _save() async {
@@ -236,6 +249,16 @@ class _FoodResultPanel extends StatelessWidget {
               _MacroChip(label: '지방', value: data.fat),
             ],
           ),
+          if (data.description.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              data.description,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 22),
           FilledButton.icon(
             onPressed: saving ? null : onSave,
