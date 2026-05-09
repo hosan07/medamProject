@@ -6,7 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/food_analysis_result.dart';
 
-const String apiKey = 'YOUR_API_KEY';
+const String apiKey = String.fromEnvironment(
+  'OPENAI_API_KEY',
+  defaultValue: 'YOUR_API_KEY',
+);
 
 final openAIServiceProvider = Provider<OpenAIService>((ref) {
   return OpenAIService(
@@ -75,6 +78,21 @@ class OpenAIService {
     } on Object catch (error) {
       throw OpenAIServiceException(error.toString());
     }
+  }
+
+  Future<FoodAnalysisResult> analyzeFoodImageOrMock(File image) async {
+    if (apiKey == 'YOUR_API_KEY' || apiKey.trim().isEmpty) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      return const FoodAnalysisResult(
+        foodName: '닭가슴살 샐러드',
+        calories: 430,
+        carbs: 28,
+        protein: 38,
+        fat: 18,
+        description: '담백한 단백질 중심 식사로 추정돼요.',
+      );
+    }
+    return analyzeFoodImage(image);
   }
 
   String _extractOutputText(Map<String, dynamic>? data) {

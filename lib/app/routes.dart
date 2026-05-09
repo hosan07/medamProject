@@ -9,7 +9,7 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/camera/screens/body_camera_screen.dart';
-import '../features/camera/screens/camera_menu_screen.dart';
+import '../features/camera/screens/camera_screen.dart';
 import '../features/camera/screens/food_camera_screen.dart';
 import '../features/chat/screens/ai_chat_screen.dart';
 import '../features/community/screens/chat_list_screen.dart';
@@ -151,7 +151,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 name: MedamRouteName.camera,
                 path: '/camera',
-                builder: (context, state) => const CameraMenuScreen(),
+                builder: (context, state) => const CameraScreen(),
               ),
             ],
           ),
