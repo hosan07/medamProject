@@ -81,10 +81,12 @@ class CameraState {
   }) {
     return CameraState(
       phase: phase ?? this.phase,
-      capturedImage:
-          clearImage == true ? null : capturedImage ?? this.capturedImage,
-      analysisResult:
-          clearAnalysis == true ? null : analysisResult ?? this.analysisResult,
+      capturedImage: clearImage == true
+          ? null
+          : capturedImage ?? this.capturedImage,
+      analysisResult: clearAnalysis == true
+          ? null
+          : analysisResult ?? this.analysisResult,
       isSaving: isSaving ?? this.isSaving,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
@@ -166,13 +168,22 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
     );
 
     try {
-      final result =
-          await ref.read(openAIServiceProvider).analyzeFoodImageOrMock(image);
+      final result = await ref
+          .read(openAIServiceProvider)
+          .analyzeFoodImage(image);
       state = AsyncData(
         _value.copyWith(
           phase: CameraPhase.result,
           capturedImage: image,
           analysisResult: result,
+        ),
+      );
+    } on OpenAIServiceException catch (error) {
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.captured,
+          capturedImage: image,
+          errorMessage: error.message,
         ),
       );
     } on Object {
@@ -255,7 +266,9 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
       file: image,
       folder: 'food_photos',
     );
-    await ref.read(homeRepositoryProvider).addMeal(
+    await ref
+        .read(homeRepositoryProvider)
+        .addMeal(
           uid: user.uid,
           mealType: mealType,
           foodName: result.foodName,

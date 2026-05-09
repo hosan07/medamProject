@@ -24,7 +24,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(cameraProvider.notifier).captureImage();
+      if (!mounted) {
+        return;
+      }
+      final cameraNotifier = ref.read(cameraProvider.notifier);
+      cameraNotifier.reset();
+      cameraNotifier.captureImage();
     });
   }
 
@@ -122,8 +127,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     }
     final result = ref.read(cameraProvider).value?.analysisResult;
     setState(() {
-      _sheetStep =
-          result == null ? _CameraSheetStep.choice : _CameraSheetStep.result;
+      _sheetStep = result == null
+          ? _CameraSheetStep.choice
+          : _CameraSheetStep.result;
     });
   }
 
@@ -209,9 +215,9 @@ class _CameraDecisionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.45,
-      minChildSize: 0.45,
-      maxChildSize: 0.7,
+      initialChildSize: 0.32,
+      minChildSize: 0.32,
+      maxChildSize: 0.75,
       builder: (context, scrollController) {
         return DecoratedBox(
           decoration: BoxDecoration(
@@ -227,20 +233,20 @@ class _CameraDecisionSheet extends StatelessWidget {
                 duration: const Duration(milliseconds: 220),
                 child: switch (step) {
                   _CameraSheetStep.choice => _ChoiceContent(
-                      onBodySave: onBodySave,
-                      onFoodAnalyze: onFoodAnalyze,
-                      onRetake: onRetake,
-                    ),
+                    onBodySave: onBodySave,
+                    onFoodAnalyze: onFoodAnalyze,
+                    onRetake: onRetake,
+                  ),
                   _CameraSheetStep.bodySaved => const _BodySavedContent(),
                   _CameraSheetStep.analyzing => const _AnalyzingContent(),
                   _CameraSheetStep.result => _FoodResultContent(
-                      result: state.analysisResult,
-                      controller: foodNameController,
-                      isSaving: state.isSaving,
-                      onChanged: onFoodNameChanged,
-                      onAddFood: onAddFood,
-                      onRetake: onRetake,
-                    ),
+                    result: state.analysisResult,
+                    controller: foodNameController,
+                    isSaving: state.isSaving,
+                    onChanged: onFoodNameChanged,
+                    onAddFood: onAddFood,
+                    onRetake: onRetake,
+                  ),
                 },
               ),
             ],
@@ -302,15 +308,18 @@ class _ChoiceContent extends StatelessWidget {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                        color: Theme.of(context).colorScheme.primary),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   onPressed: onBodySave,
                   icon: const Icon(Icons.accessibility_new_rounded),
-                  label:
-                      const _ButtonLabel(title: '눈바디 저장', subtitle: '내 앨범에 저장'),
+                  label: const _ButtonLabel(
+                    title: '눈바디 저장',
+                    subtitle: '내 앨범에 저장',
+                  ),
                 ),
               ),
             ),
@@ -321,8 +330,10 @@ class _ChoiceContent extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onFoodAnalyze,
                   icon: const Icon(Icons.restaurant_rounded),
-                  label:
-                      const _ButtonLabel(title: '음식 분석', subtitle: '칼로리 계산하기'),
+                  label: const _ButtonLabel(
+                    title: '음식 분석',
+                    subtitle: '칼로리 계산하기',
+                  ),
                 ),
               ),
             ),
@@ -392,7 +403,8 @@ class _AnalyzingContent extends StatelessWidget {
       child: Column(
         children: [
           CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.primary),
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(height: 18),
           const Text(
             'AI가 분석 중이에요...',
@@ -457,11 +469,17 @@ class _FoodResultContent extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _MacroCard(label: '탄수화물', value: data.carbs)),
+            Expanded(
+              child: _MacroCard(label: '탄수화물', value: data.carbs),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _MacroCard(label: '단백질', value: data.protein)),
+            Expanded(
+              child: _MacroCard(label: '단백질', value: data.protein),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _MacroCard(label: '지방', value: data.fat)),
+            Expanded(
+              child: _MacroCard(label: '지방', value: data.fat),
+            ),
           ],
         ),
         const SizedBox(height: 18),
@@ -474,7 +492,9 @@ class _FoodResultContent extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         TextButton(
-            onPressed: isSaving ? null : onRetake, child: const Text('다시 찍기')),
+          onPressed: isSaving ? null : onRetake,
+          child: const Text('다시 찍기'),
+        ),
       ],
     );
   }
