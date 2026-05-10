@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/network/openai_service.dart';
 import '../../../data/models/food_analysis_result.dart';
-import '../../../data/repositories/food_repository.dart';
+import '../../../data/repositories/photo_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../home/providers/home_provider.dart';
 
@@ -50,6 +50,19 @@ class CameraCaptureService {
     }
     return File(photo.path);
   }
+
+  Future<File?> captureVideo() async {
+    final permission = await cameraPermissionStatus();
+    if (!permission.isGranted) {
+      return null;
+    }
+
+    final video = await _picker.pickVideo(source: ImageSource.camera);
+    if (video == null) {
+      return null;
+    }
+    return File(video.path);
+  }
 }
 
 enum CameraPhase { idle, captured, analyzing, result, saving, cancelled }
@@ -58,24 +71,30 @@ class CameraState {
   const CameraState({
     this.phase = CameraPhase.idle,
     this.capturedImage,
+    this.mediaType = 'image',
     this.analysisResult,
     this.isSaving = false,
+    this.uploadProgress = 0,
     this.errorMessage,
   });
 
   final CameraPhase phase;
   final File? capturedImage;
+  final String mediaType;
   final FoodAnalysisResult? analysisResult;
   final bool isSaving;
+  final double uploadProgress;
   final String? errorMessage;
 
   CameraState copyWith({
     CameraPhase? phase,
     File? capturedImage,
+    String? mediaType,
     FoodAnalysisResult? analysisResult,
     bool? clearImage,
     bool? clearAnalysis,
     bool? isSaving,
+    double? uploadProgress,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -84,10 +103,12 @@ class CameraState {
       capturedImage: clearImage == true
           ? null
           : capturedImage ?? this.capturedImage,
+      mediaType: mediaType ?? this.mediaType,
       analysisResult: clearAnalysis == true
           ? null
           : analysisResult ?? this.analysisResult,
       isSaving: isSaving ?? this.isSaving,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -119,6 +140,8 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
           phase: CameraPhase.idle,
           clearImage: true,
           clearAnalysis: true,
+          mediaType: 'image',
+          uploadProgress: 0,
           clearError: true,
         ),
       );
@@ -161,7 +184,87 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
       }
 
       state = AsyncData(
-        CameraState(phase: CameraPhase.captured, capturedImage: image),
+        CameraState(
+          phase: CameraPhase.captured,
+          capturedImage: image,
+          mediaType: 'image',
+        ),
+      );
+    } on Object {
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.idle,
+          clearImage: true,
+          clearAnalysis: true,
+          errorMessage: '카메라를 열지 못했어요. 다시 시도해주세요.',
+        ),
+      );
+    } finally {
+      _isCapturing = false;
+    }
+  }
+
+  Future<void> captureVideo() async {
+    if (_isCapturing) {
+      return;
+    }
+    _isCapturing = true;
+
+    try {
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.idle,
+          clearImage: true,
+          clearAnalysis: true,
+          mediaType: 'video',
+          uploadProgress: 0,
+          clearError: true,
+        ),
+      );
+
+      final cameraService = ref.read(cameraCaptureProvider);
+      final status = await cameraService.cameraPermissionStatus();
+      if (status.isDenied || status.isLimited) {
+        final result = await cameraService.requestCameraPermission();
+        if (!result.isGranted) {
+          state = AsyncData(
+            _value.copyWith(
+              phase: CameraPhase.idle,
+              errorMessage: '카메라 권한이 필요해요.',
+            ),
+          );
+          return;
+        }
+      } else if (status.isPermanentlyDenied || status.isRestricted) {
+        await cameraService.openCameraSettings();
+        state = AsyncData(
+          _value.copyWith(
+            phase: CameraPhase.idle,
+            errorMessage: '설정 > 미담 > 카메라를 허용해주세요.',
+          ),
+        );
+        return;
+      }
+
+      final video = await cameraService.captureVideo();
+      if (video == null) {
+        state = AsyncData(
+          _value.copyWith(
+            phase: CameraPhase.cancelled,
+            clearImage: true,
+            clearAnalysis: true,
+            clearError: true,
+          ),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        CameraState(
+          phase: CameraPhase.captured,
+          capturedImage: video,
+          mediaType: 'video',
+        ),
       );
     } on Object {
       state = AsyncData(
@@ -236,37 +339,68 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
     );
   }
 
-  Future<void> saveBodyPhoto(File image) async {
+  Future<bool> saveBodyPhoto(File image) async {
     final user = ref.read(currentUserProvider);
     if (user == null) {
       state = AsyncData(_value.copyWith(errorMessage: '로그인이 필요해요.'));
-      return;
+      return false;
     }
-
-    state = AsyncData(
-      _value.copyWith(phase: CameraPhase.saving, isSaving: true),
-    );
-
-    final repository = ref.read(foodRepositoryProvider);
-    final imageUrl = await repository.uploadImage(
-      uid: user.uid,
-      file: image,
-      folder: 'body_photos',
-    );
-    await repository.saveBodyPhotoToPublicPath(
-      uid: user.uid,
-      imageUrl: imageUrl,
-    );
-    await repository.saveBodyPhoto(uid: user.uid, imageUrl: imageUrl);
-    await ImageGallerySaver.saveFile(image.path);
 
     state = AsyncData(
       _value.copyWith(
         phase: CameraPhase.saving,
-        capturedImage: image,
-        isSaving: false,
+        isSaving: true,
+        uploadProgress: 0,
+        clearError: true,
       ),
     );
+
+    try {
+      var localPath = image.path;
+      try {
+        final result = await ImageGallerySaver.saveFile(
+          image.path,
+          isReturnPathOfIOS: true,
+        );
+        localPath = _galleryPathFromResult(result) ?? image.path;
+      } on Object {
+        // 갤러리 저장 실패 시에도 촬영 파일 경로로 앱 기록은 남깁니다.
+      }
+
+      await ref
+          .read(photoRepositoryProvider)
+          .addLocalPhoto(
+            uid: user.uid,
+            localPath: localPath,
+            type: 'body',
+            mediaType: _value.mediaType,
+            category: 'all',
+          );
+
+      ref.invalidate(todayHomeDataProvider);
+
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.saving,
+          capturedImage: image,
+          isSaving: false,
+          uploadProgress: 1,
+          clearError: true,
+        ),
+      );
+      return true;
+    } on Object {
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.captured,
+          capturedImage: image,
+          isSaving: false,
+          uploadProgress: 0,
+          errorMessage: '저장에 실패했어요. 다시 시도해주세요',
+        ),
+      );
+      return false;
+    }
   }
 
   Future<bool> saveFoodLog(String mealType) async {
@@ -278,18 +412,31 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
       return false;
     }
 
-    state = AsyncData(_value.copyWith(isSaving: true, clearError: true));
+    state = AsyncData(
+      _value.copyWith(isSaving: true, uploadProgress: 0, clearError: true),
+    );
 
     try {
-      String? imageUrl;
+      var localPath = image.path;
       try {
-        imageUrl = await ref
-            .read(foodRepositoryProvider)
-            .uploadImage(uid: user.uid, file: image, folder: 'food_photos');
+        final galleryResult = await ImageGallerySaver.saveFile(
+          image.path,
+          isReturnPathOfIOS: true,
+        );
+        localPath = _galleryPathFromResult(galleryResult) ?? image.path;
       } on Object {
-        // 사진 업로드가 실패해도 당일 식단 기록 저장은 막지 않습니다.
+        // 갤러리 저장 실패 시에도 촬영 파일 경로로 앱 기록은 남깁니다.
       }
 
+      await ref
+          .read(photoRepositoryProvider)
+          .addLocalPhoto(
+            uid: user.uid,
+            localPath: localPath,
+            type: 'food',
+            foodName: result.foodName,
+            calories: result.calories,
+          );
       await ref
           .read(homeRepositoryProvider)
           .addMeal(
@@ -300,14 +447,16 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
             carbs: result.carbs,
             protein: result.protein,
             fat: result.fat,
-            imageUrl: imageUrl,
+            imageUrl: localPath,
           );
 
       ref
         ..invalidate(todayHomeDataProvider)
         ..invalidate(todayMealsProvider);
 
-      state = AsyncData(_value.copyWith(isSaving: false, clearError: true));
+      state = AsyncData(
+        _value.copyWith(isSaving: false, uploadProgress: 1, clearError: true),
+      );
       return true;
     } on Object {
       state = AsyncData(
@@ -322,5 +471,15 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
 
   void reset() {
     state = const AsyncData(CameraState());
+  }
+
+  String? _galleryPathFromResult(Object? result) {
+    if (result is Map) {
+      final value = result['filePath'] ?? result['path'];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.replaceFirst('file://', '');
+      }
+    }
+    return null;
   }
 }

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../data/models/post_model.dart';
 import '../../../data/repositories/auth_repository.dart';
@@ -63,8 +62,8 @@ final otherProfileProvider = FutureProvider.family<PublicProfileData, String>((
 
 final notificationSettingsProvider =
     AsyncNotifierProvider<NotificationSettingsNotifier, NotificationSettings>(
-  NotificationSettingsNotifier.new,
-);
+      NotificationSettingsNotifier.new,
+    );
 
 class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
   @override
@@ -76,8 +75,9 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
     }
 
     final firestore = ref.watch(firebaseFirestoreProvider);
-    final doc =
-        await firestore.doc('users/${user.uid}/settings/notification').get();
+    final doc = await firestore
+        .doc('users/${user.uid}/settings/notification')
+        .get();
     if (doc.exists) {
       return NotificationSettings.fromJson(doc.data());
     }
@@ -107,14 +107,11 @@ class NotificationSettingsNotifier extends AsyncNotifier<NotificationSettings> {
       'users/${user.uid}/settings/notification',
     );
     batch.set(settingsRef, settings.toJson(), SetOptions(merge: true));
-    batch.set(
-        profileRef,
-        {
-          'settings': {'notification': settings.toPlainJson()},
-          if (!settings.receiveAll) 'fcmToken': FieldValue.delete(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true));
+    batch.set(profileRef, {
+      'settings': {'notification': settings.toPlainJson()},
+      if (!settings.receiveAll) 'fcmToken': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
     await batch.commit();
 
     if (!settings.receiveAll) {
@@ -262,7 +259,11 @@ class AlbumItem {
     final dateValue = data['date'] ?? data['createdAt'];
     return AlbumItem(
       type: type,
-      imageUrl: data['imageUrl'] as String? ?? '',
+      imageUrl:
+          data['localPath'] as String? ??
+          data['remoteUrl'] as String? ??
+          data['imageUrl'] as String? ??
+          '',
       date: dateValue is Timestamp ? dateValue.toDate() : DateTime.now(),
     );
   }
@@ -407,96 +408,23 @@ Future<List<AlbumItem>> _readAlbumItems(
   FirebaseFirestore firestore,
   String uid,
 ) async {
-  final bodyItems = await _readBodyPhotos(firestore, uid);
-  final foodItems = await _readFoodPhotos(firestore, uid);
-  final items = [
-    ...bodyItems,
-    ...foodItems,
-  ].where((item) => item.imageUrl.trim().isNotEmpty).toList();
-  items.sort((a, b) => b.date.compareTo(a.date));
-  return items.take(80).toList();
-}
-
-Future<List<AlbumItem>> _readBodyPhotos(
-  FirebaseFirestore firestore,
-  String uid,
-) async {
-  final items = <AlbumItem>[];
-  final queries = [
-    firestore
-        .collection('body_photos/$uid/photos')
-        .orderBy('date', descending: true)
-        .limit(60)
-        .get(),
-    firestore
-        .collection('users/$uid/body_photos')
-        .orderBy('date', descending: true)
-        .limit(60)
-        .get(),
-  ];
-
-  for (final query in queries) {
-    try {
-      final snapshot = await query;
-      items.addAll(
-        snapshot.docs.map(
-          (doc) => AlbumItem.fromJson(type: '눈바디', data: doc.data()),
-        ),
-      );
-    } on FirebaseException {
-      // 경로가 아직 비어 있거나 권한/인덱스가 준비되지 않아도 나머지 앨범은 표시합니다.
-    }
-  }
-  return items;
-}
-
-Future<List<AlbumItem>> _readFoodPhotos(
-  FirebaseFirestore firestore,
-  String uid,
-) async {
-  final items = <AlbumItem>[];
-  QuerySnapshot<Map<String, dynamic>> days;
   try {
-    days = await firestore
-        .collection('food_logs/$uid/daily')
-        .orderBy('updatedAt', descending: true)
-        .limit(35)
+    final snapshot = await firestore
+        .collection('photos/$uid/items')
+        .orderBy('date', descending: true)
+        .limit(80)
         .get();
-  } on FirebaseException {
-    days = await firestore.collection('food_logs/$uid/daily').limit(35).get();
-  }
-
-  for (final day in days.docs) {
-    try {
-      final meals = await day.reference
-          .collection('meals')
-          .orderBy('createdAt', descending: true)
-          .limit(20)
-          .get();
-      items.addAll(
-        meals.docs.map((doc) {
+    return snapshot.docs
+        .map((doc) {
           final data = doc.data();
           return AlbumItem.fromJson(
-            type: '식단',
-            data: {
-              ...data,
-              'date':
-                  data['date'] ?? data['createdAt'] ?? _dateFromDayId(day.id),
-            },
+            type: data['type'] == 'food' ? '식단' : '눈바디',
+            data: data,
           );
-        }),
-      );
-    } on FirebaseException {
-      // 한 날짜의 식단 읽기에 실패해도 다른 날짜 사진은 계속 보여줍니다.
-    }
-  }
-  return items;
-}
-
-DateTime _dateFromDayId(String dayId) {
-  try {
-    return DateFormat('yyyy-MM-dd').parse(dayId);
-  } on FormatException {
-    return DateTime.now();
+        })
+        .where((item) => item.imageUrl.trim().isNotEmpty)
+        .toList();
+  } on FirebaseException {
+    return const [];
   }
 }

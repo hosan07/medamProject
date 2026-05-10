@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -236,9 +239,7 @@ class _TodayRecordCard extends StatelessWidget {
                       children: [
                         Text(
                           '${data.consumedCalories}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         Text('/ ${data.targetCalories}kcal'),
@@ -566,7 +567,9 @@ class _MealEntryBottomSheetState extends ConsumerState<_MealEntryBottomSheet> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(homeRepositoryProvider).addMeal(
+      await ref
+          .read(homeRepositoryProvider)
+          .addMeal(
             uid: user.uid,
             mealType: widget.mealType,
             foodName: _foodNameController.text.trim(),
@@ -594,7 +597,7 @@ class _ChangeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _HomeCard(
-      onTap: () => context.push('/body-album'),
+      onTap: () => context.push('/photo-album'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -644,10 +647,10 @@ class _BmiChip extends StatelessWidget {
     final label = value < 18.5
         ? '저체중'
         : value < 23
-            ? '정상'
-            : value < 25
-                ? '과체중'
-                : '관리 필요';
+        ? '정상'
+        : value < 25
+        ? '과체중'
+        : '관리 필요';
     final color = value < 23
         ? Theme.of(context).colorScheme.primary
         : const Color(0xFFE59F3A);
@@ -747,32 +750,71 @@ class _BodyPhotoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleUrls = urls.where((url) {
+      if (url.startsWith('http')) {
+        return true;
+      }
+      return File(url).existsSync();
+    }).toList();
+
     return SizedBox(
       height: 160,
-      child: urls.isEmpty
+      child: visibleUrls.isEmpty
           ? Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: const Text('아직 눈바디 사진이 없어요'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('아직 눈바디 사진이 없어요'),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    onPressed: () => context.go('/camera'),
+                    icon: const Icon(Icons.camera_alt_rounded),
+                    label: const Text('촬영하기'),
+                  ),
+                ],
+              ),
             )
           : ListView.separated(
               scrollDirection: Axis.horizontal,
               itemBuilder: (context, index) {
+                final path = visibleUrls[index];
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    urls[index],
-                    width: 112,
-                    height: 160,
-                    fit: BoxFit.cover,
-                  ),
+                  child: path.startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: path,
+                          width: 112,
+                          height: 160,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => ColoredBox(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainer,
+                          ),
+                          errorWidget: (context, url, error) => ColoredBox(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainer,
+                            child: const Icon(
+                              Icons.image_not_supported_rounded,
+                            ),
+                          ),
+                        )
+                      : Image.file(
+                          File(path),
+                          width: 112,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
                 );
               },
               separatorBuilder: (context, index) => const SizedBox(width: 10),
-              itemCount: urls.length,
+              itemCount: visibleUrls.length,
             ),
     );
   }
@@ -815,9 +857,7 @@ class _ActivitySection extends StatelessWidget {
                   children: [
                     Text(
                       '${data.exerciseMinutes}분',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
+                      style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     Text(data.exerciseType),

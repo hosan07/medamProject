@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,8 +114,8 @@ class _ProfileHeader extends ConsumerWidget {
                 Text(
                   data.nickname,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 if (data.bio.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -232,10 +235,10 @@ class _ProfileHeader extends ConsumerWidget {
                     .read(firebaseFirestoreProvider)
                     .doc('users/${data.uid}')
                     .set({
-                  'nickname': nicknameController.text.trim(),
-                  'bio': bioController.text.trim(),
-                  'updatedAt': FieldValue.serverTimestamp(),
-                }, SetOptions(merge: true));
+                      'nickname': nicknameController.text.trim(),
+                      'bio': bioController.text.trim(),
+                      'updatedAt': FieldValue.serverTimestamp(),
+                    }, SetOptions(merge: true));
                 ref.invalidate(myPageDataProvider);
                 if (context.mounted) Navigator.pop(context);
               },
@@ -388,24 +391,108 @@ class _AlbumGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return ClipRRect(
+        return InkWell(
+          onTap: () => _showFullscreenImage(context, item),
           borderRadius: BorderRadius.circular(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: item.imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => ColoredBox(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                  ),
+                  errorWidget: (context, url, error) =>
+                      _AlbumFallback(path: item.imageUrl),
+                ),
+                Positioned(
+                  left: 6,
+                  top: 6,
+                  child: Badge(label: Text(item.type)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFullscreenImage(BuildContext context, AlbumItem item) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog.fullscreen(
+          backgroundColor: Colors.black,
           child: Stack(
-            fit: StackFit.expand,
             children: [
-              Image.network(
-                item.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, _, _) => ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  child: const Icon(Icons.image_rounded),
+              Center(
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: _FullscreenAlbumImage(path: item.imageUrl),
                 ),
               ),
-              Positioned(left: 6, top: 6, child: Badge(label: Text(item.type))),
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: IconButton.filledTonal(
+                      tooltip: '닫기',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _FullscreenAlbumImage extends StatelessWidget {
+  const _FullscreenAlbumImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(path);
+    if (file.existsSync()) {
+      return Image.file(file, fit: BoxFit.contain);
+    }
+    return CachedNetworkImage(
+      imageUrl: path,
+      fit: BoxFit.contain,
+      placeholder: (context, url) =>
+          const Center(child: CircularProgressIndicator()),
+      errorWidget: (context, url, error) =>
+          const Icon(Icons.image_not_supported_rounded, color: Colors.white),
+    );
+  }
+}
+
+class _AlbumFallback extends StatelessWidget {
+  const _AlbumFallback({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(path);
+    if (file.existsSync()) {
+      return Image.file(file, fit: BoxFit.cover);
+    }
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      child: const Icon(Icons.image_rounded),
     );
   }
 }

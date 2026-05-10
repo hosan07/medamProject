@@ -51,6 +51,11 @@ class AppSettingsScreen extends ConsumerWidget {
                           title: '구독 및 크레딧',
                           onTap: () => context.push('/subscription'),
                         ),
+                        _MenuTile(
+                          icon: Icons.photo_library_outlined,
+                          title: '내 앨범',
+                          onTap: () => context.push('/photo-album'),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),

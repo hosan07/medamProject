@@ -81,9 +81,10 @@ class HomeRepository {
         emit();
       }),
       _firestore
-          .collection('users/$uid/body_photos')
+          .collection('photos/$uid/items')
+          .where('type', isEqualTo: 'body')
           .orderBy('date', descending: true)
-          .limit(3)
+          .limit(12)
           .snapshots()
           .listen((snapshot) {
             bodyPhotos = snapshot.docs.map((doc) => doc.data()).toList();
@@ -277,8 +278,9 @@ class TodayHomeData {
               .toList() ??
           fallback.weightChange,
       bodyPhotoUrls: bodyPhotos
-          .map((photo) => photo['imageUrl'])
+          .map((photo) => photo['localPath'] ?? photo['remoteUrl'])
           .whereType<String>()
+          .take(3)
           .toList(),
       exerciseMinutes:
           (exerciseDaily?['totalMinutes'] as num?)?.toInt() ??

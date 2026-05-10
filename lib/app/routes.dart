@@ -25,6 +25,7 @@ import '../features/home/widgets/main_scaffold.dart';
 import '../features/mypage/screens/app_settings_screen.dart';
 import '../features/mypage/screens/mypage_screen.dart';
 import '../features/mypage/screens/notification_settings_screen.dart';
+import '../features/mypage/screens/photo_album_screen.dart';
 import '../features/mypage/screens/profile_screen.dart';
 import '../features/mypage/screens/settings_screen.dart';
 import '../features/mypage/screens/simple_mypage_route_screen.dart';
@@ -266,8 +267,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/photo-album',
+        builder: (context, state) => const PhotoAlbumScreen(),
+      ),
+      GoRoute(
         path: '/body-album',
-        builder: (context, state) => const BodyCameraScreen(autoCapture: false),
+        builder: (context, state) => const PhotoAlbumScreen(),
       ),
       GoRoute(
         path: '/camera/body',

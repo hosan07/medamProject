@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/models/food_analysis_result.dart';
 import '../providers/camera_provider.dart';
 
-enum _CameraSheetStep { choice, bodySaved, analyzing, result }
+enum _CameraSheetStep { choice, bodySaved, analyzing, result, saved }
 
 class CameraScreen extends ConsumerStatefulWidget {
   const CameraScreen({super.key});
@@ -86,7 +86,12 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            Positioned.fill(child: _CameraBody(image: image)),
+            Positioned.fill(
+              child: _CameraBody(
+                image: image,
+                mediaType: cameraState.mediaType,
+              ),
+            ),
             SafeArea(
               child: Align(
                 alignment: Alignment.topLeft,
@@ -107,6 +112,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                 foodNameController: _foodNameController,
                 onBodySave: () => _saveBodyPhoto(image),
                 onFoodAnalyze: () => _analyzeFood(image),
+                onVideoCapture: _captureVideo,
                 onRetake: _retake,
                 onFoodNameChanged: (value) =>
                     ref.read(cameraProvider.notifier).updateFoodName(value),
@@ -124,13 +130,23 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     await ref.read(cameraProvider.notifier).captureImage();
   }
 
+  Future<void> _captureVideo() async {
+    setState(() => _sheetStep = _CameraSheetStep.choice);
+    _foodNameController.clear();
+    await ref.read(cameraProvider.notifier).captureVideo();
+  }
+
   Future<void> _saveBodyPhoto(File image) async {
     setState(() => _sheetStep = _CameraSheetStep.bodySaved);
-    await ref.read(cameraProvider.notifier).saveBodyPhoto(image);
+    final saved = await ref.read(cameraProvider.notifier).saveBodyPhoto(image);
     if (!mounted) {
       return;
     }
-    await Future<void>.delayed(const Duration(seconds: 2));
+    if (!saved) {
+      setState(() => _sheetStep = _CameraSheetStep.choice);
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       _close();
     }
@@ -169,9 +185,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       return;
     }
 
+    setState(() => _sheetStep = _CameraSheetStep.saved);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$mealType 기록에 추가했어요.')));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) {
+      return;
+    }
     _close();
   }
 
@@ -182,9 +203,10 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
 }
 
 class _CameraBody extends StatelessWidget {
-  const _CameraBody({required this.image});
+  const _CameraBody({required this.image, required this.mediaType});
 
   final File? image;
+  final String mediaType;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +225,31 @@ class _CameraBody extends StatelessWidget {
           flex: 2,
           child: SizedBox(
             width: double.infinity,
-            child: Image.file(image!, fit: BoxFit.cover),
+            child: mediaType == 'video'
+                ? ColoredBox(
+                    color: Colors.black,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.play_circle_fill_rounded,
+                            color: Colors.white,
+                            size: 64,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            image!.path.split('/').last,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Image.file(image!, fit: BoxFit.cover),
           ),
         ),
         const Expanded(child: SizedBox.expand()),
@@ -219,6 +265,7 @@ class _CameraDecisionSheet extends StatelessWidget {
     required this.foodNameController,
     required this.onBodySave,
     required this.onFoodAnalyze,
+    required this.onVideoCapture,
     required this.onRetake,
     required this.onFoodNameChanged,
     required this.onAddFood,
@@ -229,6 +276,7 @@ class _CameraDecisionSheet extends StatelessWidget {
   final TextEditingController foodNameController;
   final VoidCallback onBodySave;
   final VoidCallback onFoodAnalyze;
+  final VoidCallback onVideoCapture;
   final VoidCallback onRetake;
   final ValueChanged<String> onFoodNameChanged;
   final VoidCallback onAddFood;
@@ -256,18 +304,25 @@ class _CameraDecisionSheet extends StatelessWidget {
                   _CameraSheetStep.choice => _ChoiceContent(
                     onBodySave: onBodySave,
                     onFoodAnalyze: onFoodAnalyze,
+                    onVideoCapture: onVideoCapture,
                     onRetake: onRetake,
+                    mediaType: state.mediaType,
                   ),
-                  _CameraSheetStep.bodySaved => const _BodySavedContent(),
+                  _CameraSheetStep.bodySaved => _BodySavedContent(
+                    progress: state.uploadProgress,
+                    isSaving: state.isSaving,
+                  ),
                   _CameraSheetStep.analyzing => const _AnalyzingContent(),
                   _CameraSheetStep.result => _FoodResultContent(
                     result: state.analysisResult,
                     controller: foodNameController,
                     isSaving: state.isSaving,
+                    uploadProgress: state.uploadProgress,
                     onChanged: onFoodNameChanged,
                     onAddFood: onAddFood,
                     onRetake: onRetake,
                   ),
+                  _CameraSheetStep.saved => const _SavedContent(),
                 },
               ),
             ],
@@ -301,12 +356,16 @@ class _ChoiceContent extends StatelessWidget {
   const _ChoiceContent({
     required this.onBodySave,
     required this.onFoodAnalyze,
+    required this.onVideoCapture,
     required this.onRetake,
+    required this.mediaType,
   });
 
   final VoidCallback onBodySave;
   final VoidCallback onFoodAnalyze;
+  final VoidCallback onVideoCapture;
   final VoidCallback onRetake;
+  final String mediaType;
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +408,7 @@ class _ChoiceContent extends StatelessWidget {
               child: SizedBox(
                 height: 60,
                 child: FilledButton.icon(
-                  onPressed: onFoodAnalyze,
+                  onPressed: mediaType == 'video' ? null : onFoodAnalyze,
                   icon: const Icon(Icons.restaurant_rounded),
                   label: const _ButtonLabel(
                     title: '음식 분석',
@@ -361,7 +420,23 @@ class _ChoiceContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 18),
-        TextButton(onPressed: onRetake, child: const Text('다시 찍기')),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: onRetake,
+                child: const Text('사진 다시 찍기'),
+              ),
+            ),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: onVideoCapture,
+                icon: const Icon(Icons.videocam_rounded),
+                label: const Text('영상 촬영'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -392,21 +467,34 @@ class _ButtonLabel extends StatelessWidget {
 }
 
 class _BodySavedContent extends StatelessWidget {
-  const _BodySavedContent();
+  const _BodySavedContent({required this.progress, required this.isSaving});
+
+  final double progress;
+  final bool isSaving;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      key: ValueKey('bodySaved'),
-      padding: EdgeInsets.symmetric(vertical: 28),
+    return Padding(
+      key: const ValueKey('bodySaved'),
+      padding: const EdgeInsets.symmetric(vertical: 28),
       child: Column(
         children: [
-          Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF82), size: 42),
-          SizedBox(height: 14),
-          Text(
-            '눈바디 앨범에 저장했어요 ✓',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          Icon(
+            isSaving ? Icons.cloud_upload_rounded : Icons.check_circle_rounded,
+            color: const Color(0xFF4CAF82),
+            size: 42,
           ),
+          const SizedBox(height: 14),
+          Text(
+            isSaving ? '눈바디 사진을 저장 중이에요' : '저장됐어요! ✓',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          if (isSaving) ...[
+            const SizedBox(height: 18),
+            LinearProgressIndicator(value: progress == 0 ? null : progress),
+            const SizedBox(height: 8),
+            Text('${(progress * 100).round()}%'),
+          ],
         ],
       ),
     );
@@ -442,6 +530,7 @@ class _FoodResultContent extends StatelessWidget {
     required this.result,
     required this.controller,
     required this.isSaving,
+    required this.uploadProgress,
     required this.onChanged,
     required this.onAddFood,
     required this.onRetake,
@@ -450,6 +539,7 @@ class _FoodResultContent extends StatelessWidget {
   final FoodAnalysisResult? result;
   final TextEditingController controller;
   final bool isSaving;
+  final double uploadProgress;
   final ValueChanged<String> onChanged;
   final VoidCallback onAddFood;
   final VoidCallback onRetake;
@@ -504,6 +594,12 @@ class _FoodResultContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 18),
+        if (isSaving) ...[
+          LinearProgressIndicator(
+            value: uploadProgress == 0 ? null : uploadProgress,
+          ),
+          const SizedBox(height: 10),
+        ],
         SizedBox(
           height: 52,
           child: FilledButton(
@@ -545,6 +641,28 @@ class _MacroCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('$value g', style: const TextStyle(fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedContent extends StatelessWidget {
+  const _SavedContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      key: ValueKey('saved'),
+      padding: EdgeInsets.symmetric(vertical: 28),
+      child: Column(
+        children: [
+          Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF82), size: 42),
+          SizedBox(height: 14),
+          Text(
+            '저장됐어요! ✓',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );
