@@ -41,6 +41,7 @@ dependencies:
   intl: any
   cached_network_image: any
   permission_handler: any
+  path_provider: ^2.1.2
   lottie: any
   url_launcher: any
   video_player: ^2.8.6

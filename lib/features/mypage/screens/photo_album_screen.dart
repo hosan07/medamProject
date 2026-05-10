@@ -391,6 +391,8 @@ class _PhotoViewerState extends ConsumerState<_PhotoViewer> {
   late int _index;
   bool _showOverlay = true;
   final Set<String> _backedUpIds = {};
+  String? _uploadingId;
+  double _backupProgress = 0;
 
   PhotoAlbumItem get _current => widget.items[_index];
 
@@ -411,6 +413,7 @@ class _PhotoViewerState extends ConsumerState<_PhotoViewer> {
   Widget build(BuildContext context) {
     final current = _current;
     final backedUp = current.isBackedUp || _backedUpIds.contains(current.id);
+    final isUploading = _uploadingId == current.id;
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
@@ -435,6 +438,8 @@ class _PhotoViewerState extends ConsumerState<_PhotoViewer> {
               _TopOverlay(
                 item: current,
                 isBackedUp: backedUp,
+                isUploading: isUploading,
+                uploadProgress: _backupProgress,
                 onClose: () => Navigator.of(context).pop(),
               ),
             if (_showOverlay)
@@ -500,16 +505,41 @@ class _PhotoViewerState extends ConsumerState<_PhotoViewer> {
         confirmText: '백업하기',
         onConfirm: () async {
           try {
+            if (mounted) {
+              setState(() {
+                _uploadingId = item.id;
+                _backupProgress = 0;
+              });
+            }
             await ref
                 .read(photoRepositoryProvider)
-                .backupPhoto(uid: widget.uid, item: item);
+                .backupPhoto(
+                  uid: widget.uid,
+                  item: item,
+                  onProgress: (progress) {
+                    if (!mounted) {
+                      return;
+                    }
+                    setState(() => _backupProgress = progress.clamp(0, 1));
+                  },
+                );
             if (mounted) {
-              setState(() => _backedUpIds.add(item.id));
+              setState(() {
+                _backedUpIds.add(item.id);
+                _uploadingId = null;
+                _backupProgress = 1;
+              });
             }
             if (context.mounted) {
               _showSnack(context, '백업 완료!');
             }
           } on Object {
+            if (mounted) {
+              setState(() {
+                _uploadingId = null;
+                _backupProgress = 0;
+              });
+            }
             if (context.mounted) {
               _showSnack(context, '백업에 실패했어요. 다시 시도해주세요');
             }
@@ -659,11 +689,15 @@ class _TopOverlay extends StatelessWidget {
   const _TopOverlay({
     required this.item,
     required this.isBackedUp,
+    required this.isUploading,
+    required this.uploadProgress,
     required this.onClose,
   });
 
   final PhotoAlbumItem item;
   final bool isBackedUp;
+  final bool isUploading;
+  final double uploadProgress;
   final VoidCallback onClose;
 
   @override
@@ -688,41 +722,57 @@ class _TopOverlay extends StatelessWidget {
             colors: [Colors.black87, Colors.transparent],
           ),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              tooltip: '닫기',
-              onPressed: onClose,
-              icon: const Icon(Icons.close_rounded, color: Colors.white),
-            ),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
+            Row(
+              children: [
+                IconButton(
+                  tooltip: '닫기',
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (isBackedUp) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.cloud_done_rounded,
+                          size: 16,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (isBackedUp) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.cloud_done_rounded,
-                      size: 16,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: 48),
+              ],
             ),
-            const SizedBox(width: 48),
+            if (isUploading) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: LinearProgressIndicator(
+                  value: uploadProgress == 0 ? null : uploadProgress,
+                  color: const Color(0xFF4CAF82),
+                  backgroundColor: Colors.white24,
+                ),
+              ),
+            ],
           ],
         ),
       ),

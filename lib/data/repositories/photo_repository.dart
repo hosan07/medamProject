@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'auth_repository.dart';
 import 'food_repository.dart';
@@ -101,6 +102,7 @@ class PhotoRepository {
   Future<String> backupPhoto({
     required String uid,
     required PhotoAlbumItem item,
+    void Function(double progress)? onProgress,
   }) async {
     final file = File(item.localPath);
     if (!file.existsSync()) {
@@ -110,14 +112,51 @@ class PhotoRepository {
     final extension = item.mediaType == 'video' ? 'mp4' : 'jpg';
     final contentType = item.mediaType == 'video' ? 'video/mp4' : 'image/jpeg';
     final ref = _storage.ref('photos/$uid/${item.type}/${item.id}.$extension');
-    await ref.putFile(file, SettableMetadata(contentType: contentType));
-    final url = await ref.getDownloadURL();
-    await _itemsRef(uid).doc(item.id).set({
-      'isBackedUp': true,
-      'remoteUrl': url,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-    return url;
+    final tempFile = await _copyToTempDir(item.localPath);
+
+    try {
+      final uploadTask = ref.putFile(
+        tempFile,
+        SettableMetadata(contentType: contentType),
+      );
+      final subscription = uploadTask.snapshotEvents.listen((snapshot) {
+        final totalBytes = snapshot.totalBytes;
+        if (totalBytes <= 0) {
+          return;
+        }
+        onProgress?.call(snapshot.bytesTransferred / totalBytes);
+      });
+
+      try {
+        await uploadTask;
+        onProgress?.call(1);
+      } finally {
+        await subscription.cancel();
+      }
+
+      final url = await ref.getDownloadURL();
+      await _itemsRef(uid).doc(item.id).set({
+        'isBackedUp': true,
+        'remoteUrl': url,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return url;
+    } finally {
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+    }
+  }
+
+  Future<File> _copyToTempDir(String localPath) async {
+    final original = File(localPath);
+    final tempDir = await getTemporaryDirectory();
+    final fileName = localPath.split('/').last;
+    final tempFile = File('${tempDir.path}/$fileName');
+    if (await tempFile.exists()) {
+      await tempFile.delete();
+    }
+    return original.copy(tempFile.path);
   }
 
   Future<void> deletePhoto({
