@@ -44,6 +44,23 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     ref.listen<AsyncValue<CameraState>>(cameraProvider, (previous, next) {
       final data = next.value;
       final previousData = previous?.value;
+      if (data?.phase == CameraPhase.cancelled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _close();
+          }
+        });
+        return;
+      }
+
+      if (data?.phase == CameraPhase.idle &&
+          data?.capturedImage == null &&
+          (_sheetStep != _CameraSheetStep.choice ||
+              _foodNameController.text.isNotEmpty)) {
+        setState(() => _sheetStep = _CameraSheetStep.choice);
+        _foodNameController.clear();
+      }
+
       final errorMessage = data?.errorMessage;
       if (errorMessage != null &&
           errorMessage.isNotEmpty &&

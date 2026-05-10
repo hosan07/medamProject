@@ -52,7 +52,7 @@ class CameraCaptureService {
   }
 }
 
-enum CameraPhase { idle, captured, analyzing, result, saving }
+enum CameraPhase { idle, captured, analyzing, result, saving, cancelled }
 
 class CameraState {
   const CameraState({
@@ -98,6 +98,8 @@ final cameraProvider = AsyncNotifierProvider<CameraNotifier, CameraState>(
 );
 
 class CameraNotifier extends AsyncNotifier<CameraState> {
+  bool _isCapturing = false;
+
   @override
   Future<CameraState> build() async {
     return const CameraState();
@@ -106,55 +108,73 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
   CameraState get _value => state.value ?? const CameraState();
 
   Future<void> captureImage() async {
-    state = AsyncData(
-      _value.copyWith(
-        phase: CameraPhase.idle,
-        clearImage: true,
-        clearAnalysis: true,
-        clearError: true,
-      ),
-    );
-
-    final cameraService = ref.read(cameraCaptureProvider);
-    final status = await cameraService.cameraPermissionStatus();
-    if (status.isDenied || status.isLimited) {
-      final result = await cameraService.requestCameraPermission();
-      if (!result.isGranted) {
-        state = AsyncData(
-          _value.copyWith(
-            phase: CameraPhase.idle,
-            errorMessage: '카메라 권한이 필요해요.',
-          ),
-        );
-        return;
-      }
-    } else if (status.isPermanentlyDenied || status.isRestricted) {
-      await cameraService.openCameraSettings();
-      state = AsyncData(
-        _value.copyWith(
-          phase: CameraPhase.idle,
-          errorMessage: '설정 > 미담 > 카메라를 허용해주세요.',
-        ),
-      );
+    if (_isCapturing) {
       return;
     }
+    _isCapturing = true;
 
-    final image = await cameraService.capturePhoto();
-    if (image == null) {
+    try {
       state = AsyncData(
         _value.copyWith(
           phase: CameraPhase.idle,
           clearImage: true,
           clearAnalysis: true,
-          errorMessage: '촬영이 취소되었어요.',
+          clearError: true,
         ),
       );
-      return;
-    }
 
-    state = AsyncData(
-      CameraState(phase: CameraPhase.captured, capturedImage: image),
-    );
+      final cameraService = ref.read(cameraCaptureProvider);
+      final status = await cameraService.cameraPermissionStatus();
+      if (status.isDenied || status.isLimited) {
+        final result = await cameraService.requestCameraPermission();
+        if (!result.isGranted) {
+          state = AsyncData(
+            _value.copyWith(
+              phase: CameraPhase.idle,
+              errorMessage: '카메라 권한이 필요해요.',
+            ),
+          );
+          return;
+        }
+      } else if (status.isPermanentlyDenied || status.isRestricted) {
+        await cameraService.openCameraSettings();
+        state = AsyncData(
+          _value.copyWith(
+            phase: CameraPhase.idle,
+            errorMessage: '설정 > 미담 > 카메라를 허용해주세요.',
+          ),
+        );
+        return;
+      }
+
+      final image = await cameraService.capturePhoto();
+      if (image == null) {
+        state = AsyncData(
+          _value.copyWith(
+            phase: CameraPhase.cancelled,
+            clearImage: true,
+            clearAnalysis: true,
+            clearError: true,
+          ),
+        );
+        return;
+      }
+
+      state = AsyncData(
+        CameraState(phase: CameraPhase.captured, capturedImage: image),
+      );
+    } on Object {
+      state = AsyncData(
+        _value.copyWith(
+          phase: CameraPhase.idle,
+          clearImage: true,
+          clearAnalysis: true,
+          errorMessage: '카메라를 열지 못했어요. 다시 시도해주세요.',
+        ),
+      );
+    } finally {
+      _isCapturing = false;
+    }
   }
 
   Future<void> analyzeFood(File image) async {

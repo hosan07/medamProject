@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class MainScaffold extends StatelessWidget {
+import '../../camera/providers/camera_provider.dart';
+
+class MainScaffold extends ConsumerWidget {
   const MainScaffold({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isCameraTab = navigationShell.currentIndex == 2;
 
     return Scaffold(
@@ -46,31 +49,31 @@ class MainScaffold extends StatelessWidget {
                         icon: Icons.home_rounded,
                         label: '홈',
                         selected: navigationShell.currentIndex == 0,
-                        onTap: () => _goBranch(0),
+                        onTap: () => _goBranch(ref, 0),
                       ),
                       _NavItem(
                         icon: Icons.chat_bubble_rounded,
                         label: 'AI봇',
                         selected: navigationShell.currentIndex == 1,
-                        onTap: () => _goBranch(1),
+                        onTap: () => _goBranch(ref, 1),
                       ),
                       _NavItem(
                         icon: Icons.camera_alt_rounded,
                         label: '카메라',
                         selected: navigationShell.currentIndex == 2,
-                        onTap: () => _goBranch(2),
+                        onTap: () => _goBranch(ref, 2),
                       ),
                       _NavItem(
                         icon: Icons.people_rounded,
                         label: '커뮤니티',
                         selected: navigationShell.currentIndex == 3,
-                        onTap: () => _goBranch(3),
+                        onTap: () => _goBranch(ref, 3),
                       ),
                       _NavItem(
                         icon: Icons.person_rounded,
                         label: '마이페이지',
                         selected: navigationShell.currentIndex == 4,
-                        onTap: () => _goBranch(4),
+                        onTap: () => _goBranch(ref, 4),
                       ),
                     ],
                   ),
@@ -83,11 +86,20 @@ class MainScaffold extends StatelessWidget {
     );
   }
 
-  void _goBranch(int index) {
+  void _goBranch(WidgetRef ref, int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
     );
+    if (index != 2) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cameraNotifier = ref.read(cameraProvider.notifier);
+      cameraNotifier.reset();
+      cameraNotifier.captureImage();
+    });
   }
 }
 
