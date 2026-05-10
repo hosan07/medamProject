@@ -117,6 +117,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
                 onFoodNameChanged: (value) =>
                     ref.read(cameraProvider.notifier).updateFoodName(value),
                 onAddFood: _selectMealAndSave,
+                onDismiss: _close,
               ),
           ],
         ),
@@ -269,6 +270,7 @@ class _CameraDecisionSheet extends StatelessWidget {
     required this.onRetake,
     required this.onFoodNameChanged,
     required this.onAddFood,
+    required this.onDismiss,
   });
 
   final _CameraSheetStep step;
@@ -280,55 +282,62 @@ class _CameraDecisionSheet extends StatelessWidget {
   final VoidCallback onRetake;
   final ValueChanged<String> onFoodNameChanged;
   final VoidCallback onAddFood;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.32,
-      minChildSize: 0.32,
-      maxChildSize: 0.75,
-      builder: (context, scrollController) {
-        return DecoratedBox(
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: GestureDetector(
+        onVerticalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity > 300) {
+            onDismiss();
+          }
+        },
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-            children: [
-              const _SheetHandle(),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: switch (step) {
-                  _CameraSheetStep.choice => _ChoiceContent(
-                    onBodySave: onBodySave,
-                    onFoodAnalyze: onFoodAnalyze,
-                    onVideoCapture: onVideoCapture,
-                    onRetake: onRetake,
-                    mediaType: state.mediaType,
-                  ),
-                  _CameraSheetStep.bodySaved => _BodySavedContent(
-                    progress: state.uploadProgress,
-                    isSaving: state.isSaving,
-                  ),
-                  _CameraSheetStep.analyzing => const _AnalyzingContent(),
-                  _CameraSheetStep.result => _FoodResultContent(
-                    result: state.analysisResult,
-                    controller: foodNameController,
-                    isSaving: state.isSaving,
-                    uploadProgress: state.uploadProgress,
-                    onChanged: onFoodNameChanged,
-                    onAddFood: onAddFood,
-                    onRetake: onRetake,
-                  ),
-                  _CameraSheetStep.saved => const _SavedContent(),
-                },
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: switch (step) {
+                    _CameraSheetStep.choice => _ChoiceContent(
+                      onBodySave: onBodySave,
+                      onFoodAnalyze: onFoodAnalyze,
+                      onVideoCapture: onVideoCapture,
+                      onRetake: onRetake,
+                      mediaType: state.mediaType,
+                    ),
+                    _CameraSheetStep.bodySaved => _BodySavedContent(
+                      progress: state.uploadProgress,
+                      isSaving: state.isSaving,
+                    ),
+                    _CameraSheetStep.analyzing => const _AnalyzingContent(),
+                    _CameraSheetStep.result => _FoodResultContent(
+                      result: state.analysisResult,
+                      controller: foodNameController,
+                      isSaving: state.isSaving,
+                      uploadProgress: state.uploadProgress,
+                      onChanged: onFoodNameChanged,
+                      onAddFood: onAddFood,
+                      onRetake: onRetake,
+                    ),
+                    _CameraSheetStep.saved => const _SavedContent(),
+                  },
+                ),
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -340,9 +349,9 @@ class _SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 42,
-        height: 5,
-        margin: const EdgeInsets.only(bottom: 18),
+        width: 36,
+        height: 4,
+        margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.outlineVariant,
           borderRadius: BorderRadius.circular(99),
@@ -371,15 +380,16 @@ class _ChoiceContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       key: const ValueKey('choice'),
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const _SheetHandle(),
         Text(
           '이 사진을 어떻게 할까요?',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(
@@ -419,21 +429,15 @@ class _ChoiceContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Expanded(
-              child: TextButton(
-                onPressed: onRetake,
-                child: const Text('사진 다시 찍기'),
-              ),
-            ),
-            Expanded(
-              child: TextButton.icon(
-                onPressed: onVideoCapture,
-                icon: const Icon(Icons.videocam_rounded),
-                label: const Text('영상 촬영'),
-              ),
+            TextButton(onPressed: onRetake, child: const Text('사진 다시 찍기')),
+            TextButton.icon(
+              onPressed: onVideoCapture,
+              icon: const Icon(Icons.videocam_rounded),
+              label: const Text('영상 촬영'),
             ),
           ],
         ),
@@ -478,6 +482,7 @@ class _BodySavedContent extends StatelessWidget {
       key: const ValueKey('bodySaved'),
       padding: const EdgeInsets.symmetric(vertical: 28),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             isSaving ? Icons.cloud_upload_rounded : Icons.check_circle_rounded,
@@ -510,6 +515,7 @@ class _AnalyzingContent extends StatelessWidget {
       key: const ValueKey('analyzing'),
       padding: const EdgeInsets.symmetric(vertical: 30),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           CircularProgressIndicator(
             color: Theme.of(context).colorScheme.primary,
@@ -553,6 +559,7 @@ class _FoodResultContent extends StatelessWidget {
 
     return Column(
       key: const ValueKey('result'),
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextFormField(
@@ -656,6 +663,7 @@ class _SavedContent extends StatelessWidget {
       key: ValueKey('saved'),
       padding: EdgeInsets.symmetric(vertical: 28),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF82), size: 42),
           SizedBox(height: 14),

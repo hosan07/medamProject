@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -47,10 +46,6 @@ class _PhotoAlbumScreenState extends ConsumerState<PhotoAlbumScreen> {
           ? const Center(child: Text('로그인이 필요해요'))
           : Column(
               children: [
-                _FilterChips(
-                  selectedType: _type,
-                  onChanged: (value) => setState(() => _type = value),
-                ),
                 _MonthNavigator(
                   month: _month,
                   onPrevious: () => setState(
@@ -59,6 +54,10 @@ class _PhotoAlbumScreenState extends ConsumerState<PhotoAlbumScreen> {
                   onNext: () => setState(
                     () => _month = DateTime(_month.year, _month.month + 1),
                   ),
+                ),
+                _FilterChips(
+                  selectedType: _type,
+                  onChanged: (value) => setState(() => _type = value),
                 ),
                 Expanded(
                   child: StreamBuilder<List<PhotoAlbumItem>>(
@@ -75,9 +74,7 @@ class _PhotoAlbumScreenState extends ConsumerState<PhotoAlbumScreen> {
                       }
                       final items = snapshot.data ?? const <PhotoAlbumItem>[];
                       if (items.isEmpty) {
-                        return _EmptyAlbum(
-                          onCameraTap: () => context.go('/camera'),
-                        );
+                        return const _EmptyAlbum();
                       }
                       return _PhotoGrid(uid: user.uid, items: items);
                     },
@@ -171,9 +168,7 @@ class _MonthNavigator extends StatelessWidget {
           ),
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           IconButton(
             tooltip: '다음 달',
@@ -187,26 +182,11 @@ class _MonthNavigator extends StatelessWidget {
 }
 
 class _EmptyAlbum extends StatelessWidget {
-  const _EmptyAlbum({required this.onCameraTap});
-
-  final VoidCallback onCameraTap;
+  const _EmptyAlbum();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('이 달에 기록된 사진이 없어요'),
-          const SizedBox(height: 14),
-          FilledButton.icon(
-            onPressed: onCameraTap,
-            icon: const Icon(Icons.camera_alt_rounded),
-            label: const Text('카메라 열기'),
-          ),
-        ],
-      ),
-    );
+    return const Center(child: Text('이 달에 기록된 사진이 없어요'));
   }
 }
 

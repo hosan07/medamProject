@@ -221,14 +221,14 @@ class _TodayRecordCard extends StatelessWidget {
           Row(
             children: [
               SizedBox(
-                width: 112,
-                height: 112,
+                width: 110,
+                height: 110,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     CircularProgressIndicator(
                       value: data.calorieProgress,
-                      strokeWidth: 10,
+                      strokeWidth: 8,
                       strokeCap: StrokeCap.round,
                       backgroundColor: Theme.of(
                         context,
@@ -239,10 +239,21 @@ class _TodayRecordCard extends StatelessWidget {
                       children: [
                         Text(
                           '${data.consumedCalories}',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w900),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        Text('/ ${data.targetCalories}kcal'),
+                        Text(
+                          '/ ${data.targetCalories}kcal',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -341,23 +352,22 @@ class _MealAddSection extends StatelessWidget {
         children: [
           const _SectionHeader(title: '식단 추가'),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 112,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final count = data.mealCounts[item.$1] ?? 0;
-                return _MealAddCard(
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.1,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: [
+              for (final item in items)
+                _MealAddCard(
                   label: item.$1,
                   icon: item.$2,
-                  count: count,
+                  count: data.mealCounts[item.$1] ?? 0,
                   onTap: () => _onMealTap(context, item.$1),
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(width: 10),
-              itemCount: items.length,
-            ),
+                ),
+            ],
           ),
         ],
       ),
@@ -402,8 +412,7 @@ class _MealAddCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Container(
-        width: 104,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(22),
@@ -412,13 +421,14 @@ class _MealAddCard extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const Spacer(),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
+            const SizedBox(height: 8),
             Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.add_circle_rounded, size: 18),
                 const SizedBox(width: 4),
@@ -589,50 +599,95 @@ class _MealEntryBottomSheetState extends ConsumerState<_MealEntryBottomSheet> {
   }
 }
 
-class _ChangeSection extends StatelessWidget {
+class _ChangeSection extends StatefulWidget {
   const _ChangeSection({required this.data});
 
   final TodayHomeData data;
 
   @override
+  State<_ChangeSection> createState() => _ChangeSectionState();
+}
+
+class _ChangeSectionState extends State<_ChangeSection>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (_index != _tabController.index) {
+        setState(() => _index = _tabController.index);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _HomeCard(
-      onTap: () => context.push('/photo-album'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionHeader(title: '나의 변화'),
+          const SizedBox(height: 8),
+          TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelPadding: const EdgeInsets.only(right: 22),
+            tabAlignment: TabAlignment.start,
+            tabs: const [
+              Tab(text: '체중 그래프'),
+              Tab(text: '눈바디 앨범'),
+            ],
+          ),
           const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 640;
-              final chart = _WeightChart(values: data.weightChange);
-              final album = _BodyPhotoPreview(urls: data.bodyPhotoUrls);
-
-              return Column(
+          IndexedStack(
+            index: _index,
+            children: [
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _BmiChip(value: data.bmi),
+                  _BmiChip(value: widget.data.bmi),
                   const SizedBox(height: 14),
-                  if (isWide)
-                    Row(
-                      children: [
-                        Expanded(child: chart),
-                        const SizedBox(width: 14),
-                        Expanded(child: album),
-                      ],
-                    )
-                  else ...[
-                    chart,
-                    const SizedBox(height: 14),
-                    album,
-                  ],
+                  _WeightChart(values: widget.data.weightChange),
                 ],
-              );
-            },
+              ),
+              _BodyAlbumTab(urls: widget.data.bodyPhotoUrls),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BodyAlbumTab extends StatelessWidget {
+  const _BodyAlbumTab({required this.urls});
+
+  final List<String> urls;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => context.push('/photo-album'),
+            child: const Text('앨범 보기 >'),
+          ),
+        ),
+        _BodyPhotoPreview(urls: urls),
+      ],
     );
   }
 }
@@ -768,15 +823,7 @@ class _BodyPhotoPreview extends StatelessWidget {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('아직 눈바디 사진이 없어요'),
-                  const SizedBox(height: 10),
-                  FilledButton.icon(
-                    onPressed: () => context.go('/camera'),
-                    icon: const Icon(Icons.camera_alt_rounded),
-                    label: const Text('촬영하기'),
-                  ),
-                ],
+                children: const [Text('아직 눈바디 사진이 없어요')],
               ),
             )
           : ListView.separated(
