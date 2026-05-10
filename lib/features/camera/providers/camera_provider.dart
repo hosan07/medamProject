@@ -269,37 +269,55 @@ class CameraNotifier extends AsyncNotifier<CameraState> {
     );
   }
 
-  Future<void> saveFoodLog(String mealType) async {
+  Future<bool> saveFoodLog(String mealType) async {
     final user = ref.read(currentUserProvider);
     final image = _value.capturedImage;
     final result = _value.analysisResult;
     if (user == null || image == null || result == null) {
       state = AsyncData(_value.copyWith(errorMessage: '저장할 음식 기록이 없어요.'));
-      return;
+      return false;
     }
 
     state = AsyncData(_value.copyWith(isSaving: true, clearError: true));
 
-    final repository = ref.read(foodRepositoryProvider);
-    final imageUrl = await repository.uploadImage(
-      uid: user.uid,
-      file: image,
-      folder: 'food_photos',
-    );
-    await ref
-        .read(homeRepositoryProvider)
-        .addMeal(
-          uid: user.uid,
-          mealType: mealType,
-          foodName: result.foodName,
-          calories: result.calories,
-          carbs: result.carbs,
-          protein: result.protein,
-          fat: result.fat,
-          imageUrl: imageUrl,
-        );
+    try {
+      String? imageUrl;
+      try {
+        imageUrl = await ref
+            .read(foodRepositoryProvider)
+            .uploadImage(uid: user.uid, file: image, folder: 'food_photos');
+      } on Object {
+        // 사진 업로드가 실패해도 당일 식단 기록 저장은 막지 않습니다.
+      }
 
-    state = AsyncData(_value.copyWith(isSaving: false));
+      await ref
+          .read(homeRepositoryProvider)
+          .addMeal(
+            uid: user.uid,
+            mealType: mealType,
+            foodName: result.foodName,
+            calories: result.calories,
+            carbs: result.carbs,
+            protein: result.protein,
+            fat: result.fat,
+            imageUrl: imageUrl,
+          );
+
+      ref
+        ..invalidate(todayHomeDataProvider)
+        ..invalidate(todayMealsProvider);
+
+      state = AsyncData(_value.copyWith(isSaving: false, clearError: true));
+      return true;
+    } on Object {
+      state = AsyncData(
+        _value.copyWith(
+          isSaving: false,
+          errorMessage: '식단 기록 저장에 실패했어요. 다시 시도해주세요.',
+        ),
+      );
+      return false;
+    }
   }
 
   void reset() {

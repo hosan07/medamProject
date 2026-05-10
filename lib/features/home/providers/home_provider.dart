@@ -115,7 +115,7 @@ class HomeRepository {
         );
   }
 
-  Future<void> addMeal({
+  Future<String> addMeal({
     required String uid,
     required String mealType,
     required String foodName,
@@ -154,6 +154,7 @@ class HomeRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     await batch.commit();
+    return mealRef.id;
   }
 
   Future<void> addExercise({

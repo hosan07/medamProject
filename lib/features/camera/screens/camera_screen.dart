@@ -161,10 +161,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       return;
     }
 
-    await ref.read(cameraProvider.notifier).saveFoodLog(mealType);
+    final saved = await ref.read(cameraProvider.notifier).saveFoodLog(mealType);
     if (!mounted) {
       return;
     }
+    if (!saved) {
+      return;
+    }
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$mealType 기록에 추가했어요.')));
